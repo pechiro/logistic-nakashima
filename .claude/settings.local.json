@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun --version)",
+      "Bash(bunx --version)",
+      "Bash(bunx create-next-app@latest *)",
+      "Bash(bun install *)",
+      "Bash(bun run *)",
+      "Bash(bun add *)",
+      "Bash(bunx next *)",
+      "Skill(gstack)",
+      "Bash(bunx prisma *)",
+      "Bash(bunx eslint *)",
+      "Bash(bun -e \"import\\('eslint-config-next/core-web-vitals'\\).then\\(\\(\\)=>console.log\\('core-web-vitals: OK'\\)\\).catch\\(e=>console.error\\('core-web-vitals FAIL:', e.message||e\\)\\)\")",
+      "Bash(bun -e \"import\\('eslint-config-next/typescript'\\).then\\(\\(\\)=>console.log\\('typescript: OK'\\)\\).catch\\(e=>console.error\\('typescript FAIL:', e.message||e\\)\\)\")"
+    ]
+  }
+}

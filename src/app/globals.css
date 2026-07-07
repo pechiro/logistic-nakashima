@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   Stockroom — design tokens
+   A calm, precise operations palette. One confident royal-indigo accent;
+   functional stock-status colors (emerald / amber / red) carry all the signal.
+   ========================================================================== */
+@theme {
+  --color-canvas: #fbfbfc;
+  --color-surface: #ffffff;
+  --color-surface-2: #f6f7f9;
+
+  --color-ink: #111725;
+  --color-ink-muted: #5a6472;
+  --color-ink-faint: #6b7280; /* ~4.8:1 on white — AA for small labels/hints */
+
+  --color-line: #ecedf1;
+  --color-line-strong: #dee0e6;
+
+  --color-accent: #3a4fd6;
+  --color-accent-hover: #2f41b8;
+  --color-accent-weak: #eef0fe;
+
+  /* Stock status */
+  --color-ok: #0e9f6e;
+  --color-ok-weak: #e7f6ef;
+  --color-ok-ink: #047857; /* darker green for text/icons on the ok-weak tint (AA) */
+  --color-low: #8a5510;
+  --color-low-bar: #e0982b;
+  --color-low-weak: #fdf3e2;
+  --color-out: #b4322a;
+  --color-out-weak: #fbebea;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --radius-sm: 7px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+  }
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  [tabindex] {
+    &:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+  }
+  /* Tabular figures everywhere numbers line up in columns. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-md px-3.5 text-sm font-medium transition-colors;
+    height: 38px;
+  }
+  .btn:disabled {
+    @apply pointer-events-none opacity-55;
+  }
+  .btn-primary {
+    @apply bg-accent text-white shadow-sm;
+  }
+  .btn-primary:hover {
+    background: var(--color-accent-hover);
+  }
+  .btn-secondary {
+    @apply border border-line-strong bg-surface text-ink;
+  }
+  .btn-secondary:hover {
+    @apply bg-surface-2;
+  }
+  .btn-danger {
+    @apply bg-out text-white shadow-sm;
+  }
+  .btn-danger:hover {
+    filter: brightness(0.94);
+  }
+
+  .icon-btn {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors;
+  }
+  .icon-btn:hover {
+    @apply bg-surface-2 text-ink;
+  }
+
+  .input {
+    @apply w-full rounded-md border border-line-strong bg-surface px-3 text-sm text-ink transition-shadow;
+    height: 40px;
+  }
+  .input::placeholder {
+    @apply text-ink-faint;
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-weak);
+  }
+  .input[aria-invalid="true"] {
+    border-color: var(--color-out);
+  }
+  .input[aria-invalid="true"]:focus {
+    box-shadow: 0 0 0 3px var(--color-out-weak);
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-[13px] font-medium text-ink;
+  }
+
+  .card {
+    @apply rounded-lg border border-line bg-surface;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toast-enter {
+  animation: toast-in 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-enter {
+    animation: none;
+  }
+}

@@ -1,0 +1,5 @@
+# This project lives in a OneDrive-synced folder. OneDrive dehydrates
+# hard-linked files, which leaves bun's default hardlink install incomplete
+# (missing files inside packages). Force full file copies so installs persist.
+[install]
+backend = "copyfile"

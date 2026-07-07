@@ -1,0 +1,62 @@
+// Stockroom — inventory data model
+// Prisma 6 + Supabase Postgres (shared cloud DB). See src/lib/prisma.ts for the singleton.
+
+generator client {
+  provider = "prisma-client-js"
+  // Generate into the project (not node_modules) so Turbopack resolves it
+  // directly instead of treating @prisma/client as an unresolved external.
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Used for migrations / db push; when DATABASE_URL is a pooled (pgbouncer)
+  // connection, this must be a direct connection. Here both are the same direct URL.
+  directUrl = env("DIRECT_URL")
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  name         String
+  sku          String   @unique
+  category     String
+  // Units currently on hand.
+  quantity     Int      @default(0)
+  // Price per unit. Stored as a float for now; revisit as integer cents
+  // once valuation/reporting lands.
+  unitPrice    Float    @default(0)
+  // Reorder threshold: quantity <= reorderLevel means "low stock".
+  reorderLevel Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  movements StockMovement[]
+
+  @@index([category])
+}
+
+// The single demo user that gates the app. Minimal by design: no signup, no
+// roles, no reset. `passwordHash` is a scrypt `salt:hash` string (see src/lib/auth.ts).
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+// One row per stock change. `resultingQuantity` snapshots the product's quantity
+// immediately after the movement so the log reads correctly even as stock keeps moving.
+model StockMovement {
+  id                String   @id @default(cuid())
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId         String
+  type              String // "IN" | "OUT"
+  amount            Int // positive magnitude of the change
+  resultingQuantity Int // product quantity after this movement
+  createdAt         DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+}
