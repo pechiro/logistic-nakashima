@@ -23,7 +23,7 @@ export function StockAdjustControls({
     if (pending) return; // guard double-submit without disabling (keeps keyboard focus)
     const value = Math.trunc(Number(amount));
     if (!Number.isFinite(value) || value <= 0) {
-      onResult("Enter an amount greater than zero.", "error");
+      onResult("Ingresa una cantidad mayor que cero.", "error");
       return;
     }
     startTransition(async () => {
@@ -38,7 +38,7 @@ export function StockAdjustControls({
   return (
     <div className="flex items-center justify-end gap-2" aria-busy={pending}>
       <label htmlFor={`amount-${productId}`} className="sr-only">
-        Amount to add or remove for {name}
+        Cantidad a añadir o quitar para {name}
       </label>
       <input
         id={`amount-${productId}`}
@@ -54,22 +54,22 @@ export function StockAdjustControls({
       <button
         type="button"
         onClick={() => run("IN")}
-        aria-label={`Add stock to ${name}`}
+        aria-label={`Añadir stock a ${name}`}
         className="inline-flex h-9 items-center gap-1 rounded-md border border-ok/30 bg-ok-weak px-2.5 text-xs font-semibold text-ok-ink transition-colors hover:bg-ok/15"
       >
         <ArrowUp size={14} strokeWidth={2.6} />
-        In
+        Entrada
       </button>
       <button
         type="button"
         onClick={() => run("OUT")}
         disabled={quantity <= 0}
-        aria-label={`Remove stock from ${name}`}
-        title={quantity <= 0 ? "Nothing in stock to remove" : undefined}
+        aria-label={`Quitar stock de ${name}`}
+        title={quantity <= 0 ? "No hay stock para quitar" : undefined}
         className="inline-flex h-9 items-center gap-1 rounded-md border border-line-strong bg-surface px-2.5 text-xs font-semibold text-ink-muted transition-colors hover:bg-surface-2 disabled:opacity-50"
       >
         <ArrowDown size={14} strokeWidth={2.6} />
-        Out
+        Salida
       </button>
     </div>
   );

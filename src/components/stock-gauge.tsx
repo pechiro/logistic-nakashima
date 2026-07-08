@@ -28,7 +28,7 @@ export function StockGauge({
     <div
       className={`relative h-2 w-20 ${className}`}
       role="img"
-      aria-label={`${quantity} in stock; reorder at ${reorderLevel}`}
+      aria-label={`${quantity} en stock; reordenar en ${reorderLevel}`}
     >
       <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-line">
         <div

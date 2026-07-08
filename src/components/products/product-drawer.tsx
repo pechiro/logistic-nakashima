@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { ChevronDown, Sparkles, X } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 import { saveProduct, type SaveResult } from "@/app/products/actions";
 import type { FieldErrors } from "@/lib/validation";
@@ -9,6 +9,20 @@ import type { ProductListItem } from "@/lib/types";
 
 const CATEGORY_LIST_ID = "product-category-options";
 const INITIAL_STATE: SaveResult = { ok: false };
+
+// Fixed category options; "Otros" reveals a free-text field for anything else.
+const PREDEFINED_CATEGORIES = ["Herramientas", "Material", "Consumible", "EPP"] as const;
+
+// Unambiguous charset (no 0/O/1/I) for readable, effectively-unique SKUs.
+// Collisions are astronomically unlikely, and the server rejects dupes anyway.
+const SKU_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function generateSku(): string {
+  const bytes = new Uint32Array(6);
+  crypto.getRandomValues(bytes);
+  let code = "";
+  for (let i = 0; i < bytes.length; i++) code += SKU_ALPHABET[bytes[i] % SKU_ALPHABET.length];
+  return `NK-${code}`;
+}
 
 export function ProductDrawer({
   open,
@@ -39,19 +53,19 @@ export function ProductDrawer({
             id="drawer-title"
             className="font-display text-lg font-semibold tracking-tight text-ink"
           >
-            {editing ? "Edit product" : "New product"}
+            {editing ? "Editar producto" : "Nuevo producto"}
           </h2>
           <p id="drawer-desc" className="mt-0.5 text-sm text-ink-muted">
             {editing
-              ? "Update the details for this item."
-              : "Add an item to your inventory."}
+              ? "Actualiza los detalles de este artículo."
+              : "Añade un artículo a tu inventario."}
           </p>
         </div>
         <button
           type="button"
           onClick={onClose}
           className="icon-btn -mr-2"
-          aria-label="Close"
+          aria-label="Cerrar"
         >
           <X size={18} />
         </button>
@@ -88,13 +102,28 @@ function ProductForm({
   const [values, setValues] = useState(() => ({
     name: editing?.name ?? "",
     sku: editing?.sku ?? "",
-    category: editing?.category ?? "",
+    description: editing?.description ?? "",
     quantity: editing ? String(editing.quantity) : "0",
     reorderLevel: editing ? String(editing.reorderLevel) : "0",
     unitPrice: editing ? String(editing.unitPrice) : "",
   }));
-  const set = (key: keyof typeof values) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setValues((prev) => ({ ...prev, [key]: e.target.value }));
+  const set =
+    (key: keyof typeof values) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setValues((prev) => ({ ...prev, [key]: e.target.value }));
+
+  // Category is a fixed dropdown with an "Otros" free-text escape hatch. An
+  // existing category that isn't a preset (e.g. older data) opens as "Otros"
+  // with its value prefilled so editing never silently drops it.
+  const initialCategory = editing?.category ?? "";
+  const isPresetCategory = (PREDEFINED_CATEGORIES as readonly string[]).includes(initialCategory);
+  const [categoryChoice, setCategoryChoice] = useState(
+    initialCategory === "" ? "" : isPresetCategory ? initialCategory : "Otros",
+  );
+  const [customCategory, setCustomCategory] = useState(
+    initialCategory !== "" && !isPresetCategory ? initialCategory : "",
+  );
+  const resolvedCategory = categoryChoice === "Otros" ? customCategory : categoryChoice;
 
   useEffect(() => {
     if (state.ok && !handled.current) {
@@ -115,7 +144,7 @@ function ProductForm({
       <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
         {editing && <input type="hidden" name="id" value={editing.id} />}
 
-        <Field label="Name" htmlFor="name" error={fieldErrors.name}>
+        <Field label="Nombre" htmlFor="name" error={fieldErrors.name}>
           <input
             id="name"
             name="name"
@@ -123,7 +152,7 @@ function ProductForm({
             data-autofocus
             value={values.name}
             onChange={set("name")}
-            placeholder="e.g. Mechanical Keyboard, TKL"
+            placeholder="p. ej. Teclado mecánico, TKL"
             maxLength={120}
             aria-invalid={!!fieldErrors.name}
             aria-describedby={describedBy("name")}
@@ -135,48 +164,92 @@ function ProductForm({
           label="SKU"
           htmlFor="sku"
           error={fieldErrors.sku}
-          hint="Letters, numbers, and hyphens. Must be unique."
+          hint="Letras, números y guiones. Debe ser único."
         >
-          <input
-            id="sku"
-            name="sku"
-            type="text"
-            value={values.sku}
-            onChange={set("sku")}
-            placeholder="ELC-1042"
-            maxLength={40}
-            autoCapitalize="characters"
-            autoCorrect="off"
-            spellCheck={false}
-            aria-invalid={!!fieldErrors.sku}
-            aria-describedby={describedBy("sku", true)}
-            className="input font-mono uppercase"
-          />
+          <div className="relative">
+            <input
+              id="sku"
+              name="sku"
+              type="text"
+              value={values.sku}
+              onChange={set("sku")}
+              placeholder="ELC-1042"
+              maxLength={40}
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-invalid={!!fieldErrors.sku}
+              aria-describedby={describedBy("sku", true)}
+              className="input font-mono uppercase pr-[4.75rem]"
+            />
+            <button
+              type="button"
+              onClick={() => setValues((prev) => ({ ...prev, sku: generateSku() }))}
+              className="absolute right-1.5 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent-weak"
+              title="Generar un SKU aleatorio"
+            >
+              <Sparkles size={13} strokeWidth={2} />
+              Auto
+            </button>
+          </div>
         </Field>
 
-        <Field label="Category" htmlFor="category" error={fieldErrors.category}>
-          <input
-            id="category"
-            name="category"
-            type="text"
-            list={CATEGORY_LIST_ID}
-            value={values.category}
-            onChange={set("category")}
-            placeholder="e.g. Electronics"
-            maxLength={60}
-            aria-invalid={!!fieldErrors.category}
-            aria-describedby={describedBy("category")}
-            className="input"
-          />
-          <datalist id={CATEGORY_LIST_ID}>
-            {categories.map((category) => (
-              <option key={category} value={category} />
-            ))}
-          </datalist>
+        <Field label="Categoría" htmlFor="category" error={fieldErrors.category}>
+          {/* One hidden field carries the final value: the selected preset, or
+              the free-text entry when "Otros" is chosen. Keeps the server's
+              single `category` field unchanged. */}
+          <input type="hidden" name="category" value={resolvedCategory} />
+          <div className="relative">
+            <select
+              id="category"
+              value={categoryChoice}
+              onChange={(e) => setCategoryChoice(e.target.value)}
+              aria-invalid={!!fieldErrors.category}
+              aria-describedby={describedBy("category")}
+              className="input w-full appearance-none pr-9"
+            >
+              <option value="" disabled>
+                Selecciona una categoría…
+              </option>
+              {PREDEFINED_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+              <option value="Otros">Otros</option>
+            </select>
+            <ChevronDown
+              size={16}
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint"
+            />
+          </div>
+
+          {categoryChoice === "Otros" && (
+            <>
+              <input
+                type="text"
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                list={CATEGORY_LIST_ID}
+                placeholder="Escribe el nombre de la categoría"
+                maxLength={60}
+                autoFocus
+                aria-label="Nombre de categoría personalizada"
+                aria-invalid={!!fieldErrors.category}
+                aria-describedby={describedBy("category")}
+                className="input mt-2"
+              />
+              <datalist id={CATEGORY_LIST_ID}>
+                {categories.map((category) => (
+                  <option key={category} value={category} />
+                ))}
+              </datalist>
+            </>
+          )}
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="In stock" htmlFor="quantity" error={fieldErrors.quantity}>
+          <Field label="En stock" htmlFor="quantity" error={fieldErrors.quantity}>
             <input
               id="quantity"
               name="quantity"
@@ -192,10 +265,10 @@ function ProductForm({
             />
           </Field>
           <Field
-            label="Reorder at"
+            label="Reordenar en"
             htmlFor="reorderLevel"
             error={fieldErrors.reorderLevel}
-            hint="Flag as low at or below this."
+            hint="Marcar como bajo en este valor o por debajo."
           >
             <input
               id="reorderLevel"
@@ -213,7 +286,7 @@ function ProductForm({
           </Field>
         </div>
 
-        <Field label="Unit price" htmlFor="unitPrice" error={fieldErrors.unitPrice}>
+        <Field label="Precio unitario" htmlFor="unitPrice" error={fieldErrors.unitPrice}>
           <div className="relative">
             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-faint">
               $
@@ -235,6 +308,26 @@ function ProductForm({
           </div>
         </Field>
 
+        <Field
+          label="Descripción / Notas"
+          htmlFor="description"
+          optional
+          error={fieldErrors.description}
+        >
+          <textarea
+            id="description"
+            name="description"
+            value={values.description}
+            onChange={set("description")}
+            rows={3}
+            maxLength={500}
+            placeholder="Detalles adicionales: ubicación, proveedor, estado…"
+            aria-invalid={!!fieldErrors.description}
+            aria-describedby={describedBy("description")}
+            className="textarea"
+          />
+        </Field>
+
         {formError && (
           <p
             role="alert"
@@ -247,10 +340,10 @@ function ProductForm({
 
       <footer className="flex items-center justify-end gap-2 border-t border-line bg-surface px-6 py-4">
         <button type="button" onClick={onCancel} className="btn btn-secondary">
-          Cancel
+          Cancelar
         </button>
         <button type="submit" disabled={pending} className="btn btn-primary">
-          {pending ? "Saving…" : editing ? "Save changes" : "Add product"}
+          {pending ? "Guardando…" : editing ? "Guardar cambios" : "Añadir producto"}
         </button>
       </footer>
     </form>
@@ -262,18 +355,23 @@ function Field({
   htmlFor,
   error,
   hint,
+  optional,
   children,
 }: {
   label: string;
   htmlFor: string;
   error?: string;
   hint?: string;
+  optional?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="field-label">
-        {label}
+      <label htmlFor={htmlFor} className="field-label flex items-center justify-between gap-2">
+        <span>{label}</span>
+        {optional && (
+          <span className="text-[11px] font-normal text-ink-faint">Opcional</span>
+        )}
       </label>
       {children}
       {error ? (

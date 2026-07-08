@@ -15,7 +15,7 @@ export function LoginForm({ next }: { next: string }) {
 
       <div>
         <label htmlFor="username" className="field-label">
-          Username
+          Usuario
         </label>
         <input
           id="username"
@@ -25,14 +25,14 @@ export function LoginForm({ next }: { next: string }) {
           autoFocus
           required
           className="input"
-          placeholder="admin"
+          placeholder="usuario"
           aria-invalid={state.error ? true : undefined}
         />
       </div>
 
       <div>
         <label htmlFor="password" className="field-label">
-          Password
+          Contraseña
         </label>
         <input
           id="password"
@@ -54,7 +54,7 @@ export function LoginForm({ next }: { next: string }) {
 
       <button type="submit" className="btn btn-primary w-full" disabled={pending}>
         <LogIn size={17} />
-        {pending ? "Signing in…" : "Sign in"}
+        {pending ? "Iniciando sesión…" : "Iniciar sesión"}
       </button>
     </form>
   );

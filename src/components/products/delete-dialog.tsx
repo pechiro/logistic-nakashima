@@ -56,15 +56,15 @@ export function DeleteDialog({
               id="delete-title"
               className="font-display text-lg font-semibold tracking-tight text-ink"
             >
-              Delete this product?
+              ¿Eliminar este producto?
             </h2>
             <p id="delete-desc" className="mt-1 text-sm text-ink-muted">
               {product ? (
                 <>
-                  This removes{" "}
+                  Esto elimina{" "}
                   <span className="font-medium text-ink">{product.name}</span> (
                   <span className="font-mono text-[12.5px]">{product.sku}</span>)
-                  from your inventory. You can&rsquo;t undo this.
+                  de tu inventario. No podrás deshacer esta acción.
                 </>
               ) : null}
             </p>
@@ -86,7 +86,7 @@ export function DeleteDialog({
             disabled={pending}
             className="btn btn-secondary"
           >
-            Keep it
+            Conservar
           </button>
           <button
             type="button"
@@ -94,7 +94,7 @@ export function DeleteDialog({
             disabled={pending}
             className="btn btn-danger"
           >
-            {pending ? "Deleting…" : "Delete product"}
+            {pending ? "Eliminando…" : "Eliminar producto"}
           </button>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import {
   ArrowDownUp,
+  FolderKanban,
   History,
   LayoutDashboard,
   LogOut,
@@ -21,15 +22,16 @@ type IconType = ComponentType<{ size?: number; strokeWidth?: number; className?:
 type NavItem = { label: string; href?: string; icon: IconType; soon?: boolean };
 
 const PRIMARY_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Products", href: "/products", icon: Package },
-  { label: "Stock", href: "/stock", icon: ArrowDownUp },
-  { label: "Movements", href: "/movements", icon: History },
+  { label: "Panel de Control", href: "/", icon: LayoutDashboard },
+  { label: "Productos", href: "/products", icon: Package },
+  { label: "Inventario", href: "/stock", icon: ArrowDownUp },
+  { label: "Movimientos", href: "/movements", icon: History },
+  { label: "Proyectos", href: "/proyectos", icon: FolderKanban },
 ];
 
 // Honest roadmap: the features we're building next, shown but not yet active.
 const UPCOMING_NAV: NavItem[] = [
-  { label: "Team", icon: Users, soon: true },
+  { label: "Equipo", icon: Users, soon: true },
 ];
 
 function Wordmark() {
@@ -61,7 +63,7 @@ function NavContent({
     <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-5">
       <div>
         <p className="px-3 pb-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-          Warehouse
+          Almacén
         </p>
         <ul className="space-y-0.5">
           {PRIMARY_NAV.map((item) => {
@@ -93,7 +95,7 @@ function NavContent({
 
       <div>
         <p className="px-3 pb-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-          Coming soon
+          Próximamente
         </p>
         <ul className="space-y-0.5">
           {UPCOMING_NAV.map((item) => (
@@ -105,7 +107,7 @@ function NavContent({
                 <item.icon size={17} className="opacity-60" />
                 <span className="flex-1">{item.label}</span>
                 <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-faint">
-                  Soon
+                  Pronto
                 </span>
               </div>
             </li>
@@ -125,13 +127,13 @@ function WorkspaceFooter() {
           className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
         >
           <LogOut size={17} className="text-ink-faint" />
-          Sign out
+          Cerrar Sesión
         </button>
       </form>
       <div className="mt-1 flex items-center gap-2 px-3 pt-2 text-xs text-ink-muted">
         <span className="h-1.5 w-1.5 rounded-full bg-ok" aria-hidden />
-        <span>Local workspace</span>
-        <span className="ml-auto font-mono text-ink-faint">SQLite</span>
+        <span>Espacio en la nube</span>
+        <span className="ml-auto font-mono text-ink-faint">Supabase</span>
       </div>
     </div>
   );
@@ -221,7 +223,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             type="button"
             className="icon-btn"
             onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
+            aria-label="Abrir menú"
             aria-expanded={menuOpen}
             aria-haspopup="dialog"
           >
@@ -249,7 +251,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ref={navPanelRef}
           role="dialog"
           aria-modal="true"
-          aria-label="Main navigation"
+          aria-label="Navegación principal"
           className={`absolute inset-y-0 left-0 flex w-72 max-w-[82%] flex-col border-r border-line bg-surface shadow-xl transition-transform duration-200 ease-out motion-reduce:transition-none ${
             menuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
@@ -260,7 +262,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               type="button"
               className="icon-btn"
               onClick={() => setMenuOpen(false)}
-              aria-label="Close menu"
+              aria-label="Cerrar menú"
             >
               <X size={18} />
             </button>

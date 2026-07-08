@@ -22,14 +22,14 @@ export default async function MovementsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Inventory" title="Movements" />
+      <PageHeader eyebrow="Almacén" title="Movimientos" />
 
       <div className="px-5 py-6 lg:px-8">
         {movements.length === 0 ? (
           <EmptyState
             icon={<History size={22} />}
-            title="No stock movements yet"
-            body="Use Stock In / Stock Out on the Stock page — every change is logged here."
+            title="Aún no hay movimientos de stock"
+            body="Usa Entrada / Salida de stock en la página de Inventario — cada cambio se registra aquí."
           />
         ) : (
           <>
@@ -39,19 +39,19 @@ export default async function MovementsPage() {
                   <thead>
                     <tr className="border-b border-line">
                       <th scope="col" className={`${TH} pl-5 text-left`}>
-                        Product
+                        Producto
                       </th>
                       <th scope="col" className={`${TH} text-left`}>
-                        Type
+                        Tipo
                       </th>
                       <th scope="col" className={`${TH} text-right`}>
-                        Amount
+                        Cantidad
                       </th>
                       <th scope="col" className={`${TH} text-right`}>
-                        Resulting qty
+                        Cantidad resultante
                       </th>
                       <th scope="col" className={`${TH} pr-5 text-right`}>
-                        When
+                        Fecha
                       </th>
                     </tr>
                   </thead>
@@ -72,7 +72,14 @@ export default async function MovementsPage() {
                             </div>
                           </td>
                           <td className="py-3 pr-3">
-                            <MovementTypeBadge type={m.type as MovementType} />
+                            <div className="flex flex-col items-start gap-1">
+                              <MovementTypeBadge type={m.type as MovementType} />
+                              {m.note && (
+                                <span className="rounded border border-accent/20 bg-accent-weak px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                                  {m.note}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td
                             className={`py-3 pr-3 text-right font-medium tabular-nums ${
@@ -97,7 +104,7 @@ export default async function MovementsPage() {
             </div>
             {movements.length === RECENT_LIMIT && (
               <p className="mt-3 text-xs text-ink-faint">
-                Showing the {RECENT_LIMIT} most recent movements.
+                Mostrando los {RECENT_LIMIT} movimientos más recientes.
               </p>
             )}
           </>

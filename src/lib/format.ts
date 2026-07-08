@@ -21,7 +21,7 @@ export function formatCurrency(value: number): string {
   return currency.format(value);
 }
 
-const integer = new Intl.NumberFormat("en-US");
+const integer = new Intl.NumberFormat("es-PE");
 
 export function formatInt(value: number): string {
   return integer.format(value);
@@ -34,7 +34,9 @@ export function gaugeFill(quantity: number, reorderLevel: number): number {
   return Math.max(0, Math.min(1, quantity / full));
 }
 
-const dateTime = new Intl.DateTimeFormat("en-US", {
+// Dates render in Spanish (Peru). Currency stays en-US/USD above so the "$"
+// glyph and grouping don't change under localization.
+const dateTime = new Intl.DateTimeFormat("es-PE", {
   month: "short",
   day: "numeric",
   year: "numeric",

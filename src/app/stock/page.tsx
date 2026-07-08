@@ -12,6 +12,7 @@ export default async function StockPage() {
       name: true,
       sku: true,
       category: true,
+      description: true,
       quantity: true,
       unitPrice: true,
       reorderLevel: true,

@@ -100,16 +100,16 @@ export function ProductsView({
         <div className="flex items-center justify-between gap-4 px-5 py-4 lg:px-8">
           <div>
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-              Inventory
+              Almacén
             </p>
             <h1 className="mt-0.5 font-display text-2xl font-semibold tracking-tight text-ink">
-              Products
+              Productos
             </h1>
           </div>
           <button type="button" onClick={openCreate} className="btn btn-primary">
             <Plus size={16} strokeWidth={2.4} />
-            <span className="hidden sm:inline">New product</span>
-            <span className="sm:hidden">New</span>
+            <span className="hidden sm:inline">Nuevo producto</span>
+            <span className="sm:hidden">Nuevo</span>
           </button>
         </div>
       </header>
@@ -121,7 +121,7 @@ export function ProductsView({
               <strong className="font-display text-ink tabular-nums">
                 {products.length}
               </strong>{" "}
-              {products.length === 1 ? "product" : "products"}
+              {products.length === 1 ? "producto" : "productos"}
             </span>
             {lowCount > 0 && (
               <>
@@ -142,7 +142,7 @@ export function ProductsView({
                     className="h-1.5 w-1.5 rounded-full bg-low-bar"
                     aria-hidden
                   />
-                  {lowCount} low
+                  {lowCount} bajos
                 </button>
               </>
             )}
@@ -158,13 +158,13 @@ export function ProductsView({
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search products"
-                aria-label="Search products"
+                placeholder="Buscar productos"
+                aria-label="Buscar productos"
                 className="input h-9 w-full pl-8 sm:w-56"
               />
             </div>
             <label htmlFor="category-filter" className="sr-only">
-              Filter by category
+              Filtrar por categoría
             </label>
             <select
               id="category-filter"
@@ -172,7 +172,7 @@ export function ProductsView({
               onChange={(e) => setCategory(e.target.value)}
               className="input h-9 w-auto"
             >
-              <option value="all">All categories</option>
+              <option value="all">Todas las categorías</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -185,8 +185,8 @@ export function ProductsView({
         {!hasProducts ? (
           <EmptyState
             icon={<PackagePlus size={22} />}
-            title="No products yet"
-            body="Add your first item to start tracking stock levels."
+            title="Aún no hay productos"
+            body="Añade tu primer artículo para empezar a controlar los niveles de stock."
             action={
               <button
                 type="button"
@@ -194,22 +194,22 @@ export function ProductsView({
                 className="btn btn-primary"
               >
                 <Plus size={16} strokeWidth={2.4} />
-                New product
+                Nuevo producto
               </button>
             }
           />
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={<PackageSearch size={22} />}
-            title="No products match"
-            body="Try a different search, or clear the filters to see everything."
+            title="No hay productos que coincidan"
+            body="Prueba con otra búsqueda o limpia los filtros para ver todo."
             action={
               <button
                 type="button"
                 onClick={clearFilters}
                 className="btn btn-secondary"
               >
-                Clear filters
+                Limpiar filtros
               </button>
             }
           />

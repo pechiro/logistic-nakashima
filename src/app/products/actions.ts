@@ -24,6 +24,7 @@ export async function saveProduct(
     name: formData.get("name"),
     sku: formData.get("sku"),
     category: formData.get("category"),
+    description: formData.get("description"),
     quantity: formData.get("quantity"),
     unitPrice: formData.get("unitPrice"),
     reorderLevel: formData.get("reorderLevel"),
@@ -42,12 +43,12 @@ export async function saveProduct(
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
-        return { ok: false, fieldErrors: { sku: "That SKU is already in use." } };
+        return { ok: false, fieldErrors: { sku: "Ese SKU ya está en uso." } };
       }
       if (error.code === "P2025") {
         return {
           ok: false,
-          formError: "That product no longer exists. Refresh and try again.",
+          formError: "Ese producto ya no existe. Actualiza e inténtalo de nuevo.",
         };
       }
     }
@@ -55,7 +56,7 @@ export async function saveProduct(
   }
 
   revalidatePath("/products");
-  return { ok: true, message: id ? "Changes saved." : "Product added." };
+  return { ok: true, message: id ? "Cambios guardados." : "Producto añadido." };
 }
 
 export type DeleteResult = { ok: boolean; message: string };
@@ -68,11 +69,11 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2025"
     ) {
-      return { ok: false, message: "That product was already removed." };
+      return { ok: false, message: "Ese producto ya fue eliminado." };
     }
     throw error;
   }
 
   revalidatePath("/products");
-  return { ok: true, message: "Product deleted." };
+  return { ok: true, message: "Producto eliminado." };
 }

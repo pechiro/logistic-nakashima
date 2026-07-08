@@ -124,6 +124,23 @@
     box-shadow: 0 0 0 3px var(--color-out-weak);
   }
 
+  .textarea {
+    @apply w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-sm leading-relaxed text-ink transition-shadow;
+    min-height: 76px;
+    resize: vertical;
+  }
+  .textarea::placeholder {
+    @apply text-ink-faint;
+  }
+  .textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-weak);
+  }
+  .textarea[aria-invalid="true"] {
+    border-color: var(--color-out);
+  }
+
   .field-label {
     @apply mb-1.5 block text-[13px] font-medium text-ink;
   }

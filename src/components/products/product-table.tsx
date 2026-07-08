@@ -38,18 +38,18 @@ export function ProductTable({
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-line">
-              <HeaderCell className="pl-5 text-left">Product</HeaderCell>
+              <HeaderCell className="pl-5 text-left">Producto</HeaderCell>
               <HeaderCell className="text-left">SKU</HeaderCell>
               <HeaderCell className="hidden text-left sm:table-cell">
-                Category
+                Categoría
               </HeaderCell>
-              <HeaderCell className="text-left">In stock</HeaderCell>
-              <HeaderCell className="text-right">Unit price</HeaderCell>
+              <HeaderCell className="text-left">En stock</HeaderCell>
+              <HeaderCell className="text-right">Precio unitario</HeaderCell>
               <HeaderCell className="hidden text-right md:table-cell">
-                Reorder at
+                Reordenar en
               </HeaderCell>
               <th className="w-14 py-2.5 pr-4">
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">Acciones</span>
               </th>
             </tr>
           </thead>
@@ -74,6 +74,14 @@ export function ProductTable({
                     }`}
                   >
                     <div className="font-medium text-ink">{product.name}</div>
+                    {product.description && (
+                      <div
+                        className="mt-0.5 max-w-[22rem] truncate text-xs text-ink-faint"
+                        title={product.description}
+                      >
+                        {product.description}
+                      </div>
+                    )}
                   </td>
                   <td className="py-3 pr-3">
                     <span className="font-mono text-[12.5px] text-ink-muted">
@@ -115,7 +123,7 @@ export function ProductTable({
                         type="button"
                         onClick={() => onEdit(product)}
                         className="icon-btn"
-                        aria-label={`Edit ${product.name}`}
+                        aria-label={`Editar ${product.name}`}
                       >
                         <Pencil size={15} />
                       </button>
@@ -123,7 +131,7 @@ export function ProductTable({
                         type="button"
                         onClick={() => onDelete(product)}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-out-weak hover:text-out"
-                        aria-label={`Delete ${product.name}`}
+                        aria-label={`Eliminar ${product.name}`}
                       >
                         <Trash2 size={15} />
                       </button>

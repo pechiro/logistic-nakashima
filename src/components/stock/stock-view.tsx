@@ -48,7 +48,7 @@ export function StockView({ products }: { products: ProductListItem[] }) {
 
   return (
     <>
-      <PageHeader eyebrow="Inventory" title="Stock" />
+      <PageHeader eyebrow="Almacén" title="Inventario" />
 
       <div className="px-5 py-6 lg:px-8">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -57,7 +57,7 @@ export function StockView({ products }: { products: ProductListItem[] }) {
               <strong className="font-display text-ink tabular-nums">
                 {products.length}
               </strong>{" "}
-              {products.length === 1 ? "product" : "products"}
+              {products.length === 1 ? "producto" : "productos"}
             </span>
             {lowCount > 0 && (
               <>
@@ -78,7 +78,7 @@ export function StockView({ products }: { products: ProductListItem[] }) {
                     className="h-1.5 w-1.5 rounded-full bg-low-bar"
                     aria-hidden
                   />
-                  {lowCount} low
+                  {lowCount} bajos
                 </button>
               </>
             )}
@@ -93,8 +93,8 @@ export function StockView({ products }: { products: ProductListItem[] }) {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products"
-              aria-label="Search products"
+              placeholder="Buscar productos"
+              aria-label="Buscar productos"
               className="input h-9 w-full pl-8"
             />
           </div>
@@ -103,14 +103,14 @@ export function StockView({ products }: { products: ProductListItem[] }) {
         {!hasProducts ? (
           <EmptyState
             icon={<PackageSearch size={22} />}
-            title="No products yet"
-            body="Add products on the Products page, then adjust their stock here."
+            title="Aún no hay productos"
+            body="Agrega productos en la página de Productos y luego ajusta su stock aquí."
           />
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={<PackageSearch size={22} />}
-            title="No products match"
-            body="Try a different search, or clear the low-stock filter."
+            title="Ningún producto coincide"
+            body="Prueba con otra búsqueda o quita el filtro de stock bajo."
           />
         ) : (
           <div className="card overflow-hidden">
@@ -119,13 +119,13 @@ export function StockView({ products }: { products: ProductListItem[] }) {
                 <thead>
                   <tr className="border-b border-line">
                     <th scope="col" className={`${TH} pl-5 text-left`}>
-                      Product
+                      Producto
                     </th>
                     <th scope="col" className={`${TH} text-left`}>
-                      In stock
+                      En stock
                     </th>
                     <th scope="col" className={`${TH} pr-5 text-right`}>
-                      Adjust
+                      Ajustar
                     </th>
                   </tr>
                 </thead>

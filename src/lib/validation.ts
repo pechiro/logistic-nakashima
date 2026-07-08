@@ -4,40 +4,48 @@ export const productInputSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, "Name is required.")
-    .max(120, "Keep the name under 120 characters."),
+    .min(1, "El nombre es obligatorio.")
+    .max(120, "El nombre debe tener menos de 120 caracteres."),
   sku: z
     .string()
     .trim()
-    .min(1, "SKU is required.")
-    .max(40, "Keep the SKU under 40 characters.")
-    .regex(/^[A-Za-z0-9][A-Za-z0-9-]*$/, "Use letters, numbers, and hyphens only.")
+    .min(1, "El SKU es obligatorio.")
+    .max(40, "El SKU debe tener menos de 40 caracteres.")
+    .regex(/^[A-Za-z0-9][A-Za-z0-9-]*$/, "Usa solo letras, números y guiones.")
     .transform((value) => value.toUpperCase()),
   category: z
     .string()
     .trim()
-    .min(1, "Category is required.")
-    .max(60, "Keep the category under 60 characters."),
+    .min(1, "La categoría es obligatoria.")
+    .max(60, "La categoría debe tener menos de 60 caracteres."),
+  // Optional notes. Empty/whitespace collapses to null so blank stays unset.
+  description: z.preprocess(
+    (value) => (typeof value === "string" && value.trim().length > 0 ? value.trim() : null),
+    z.string().max(500, "Las notas deben tener menos de 500 caracteres.").nullable(),
+  ),
   quantity: z.coerce
-    .number({ error: "Enter a quantity." })
-    .int("Enter a whole number.")
-    .min(0, "Quantity can't be negative.")
-    .max(1_000_000, "That quantity is too large."),
+    .number({ error: "Ingresa una cantidad." })
+    .int("Ingresa un número entero.")
+    .min(0, "La cantidad no puede ser negativa.")
+    .max(1_000_000, "Esa cantidad es demasiado grande."),
   unitPrice: z.coerce
-    .number({ error: "Enter a unit price." })
-    .min(0, "Price can't be negative.")
-    .max(1_000_000, "That price is too large."),
+    .number({ error: "Ingresa un precio unitario." })
+    .min(0, "El precio no puede ser negativo.")
+    .max(1_000_000, "Ese precio es demasiado grande."),
   reorderLevel: z.coerce
-    .number({ error: "Enter a reorder level." })
-    .int("Enter a whole number.")
-    .min(0, "Reorder level can't be negative.")
-    .max(1_000_000, "That reorder level is too large."),
+    .number({ error: "Ingresa un nivel de reorden." })
+    .int("Ingresa un número entero.")
+    .min(0, "El nivel de reorden no puede ser negativo.")
+    .max(1_000_000, "Ese nivel de reorden es demasiado grande."),
 });
 
 export type ProductInput = z.infer<typeof productInputSchema>;
 
 export type FieldErrors = Partial<
-  Record<"name" | "sku" | "category" | "quantity" | "unitPrice" | "reorderLevel", string>
+  Record<
+    "name" | "sku" | "category" | "description" | "quantity" | "unitPrice" | "reorderLevel",
+    string
+  >
 >;
 
 /** Collapse a ZodError into one message per field (first wins). */

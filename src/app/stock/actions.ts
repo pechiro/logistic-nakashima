@@ -23,17 +23,17 @@ export async function adjustStock(
 ): Promise<StockResult> {
   // The client is untrusted — validate everything here.
   if (type !== "IN" && type !== "OUT") {
-    return { ok: false, error: "Invalid stock movement." };
+    return { ok: false, error: "Movimiento de inventario no válido." };
   }
   if (typeof productId !== "string" || productId.length === 0) {
-    return { ok: false, error: "Missing product." };
+    return { ok: false, error: "Falta el producto." };
   }
   const amount = Math.trunc(Number(amountInput));
   if (!Number.isFinite(amount) || amount <= 0) {
-    return { ok: false, error: "Enter an amount greater than zero." };
+    return { ok: false, error: "Ingresa una cantidad mayor que cero." };
   }
   if (amount > MAX_AMOUNT) {
-    return { ok: false, error: `Keep the amount under ${MAX_AMOUNT.toLocaleString()}.` };
+    return { ok: false, error: `Mantén la cantidad por debajo de ${MAX_AMOUNT.toLocaleString("es-PE")}.` };
   }
 
   try {
@@ -57,11 +57,11 @@ export async function adjustStock(
           select: { quantity: true },
         });
         if (!existing) {
-          return { ok: false as const, error: "That product no longer exists." };
+          return { ok: false as const, error: "Ese producto ya no existe." };
         }
         return {
           ok: false as const,
-          error: `Only ${existing.quantity} in stock — can't remove ${amount}.`,
+          error: `Solo hay ${existing.quantity} en stock — no se puede retirar ${amount}.`,
         };
       }
 
@@ -77,8 +77,8 @@ export async function adjustStock(
         ok: true as const,
         message:
           type === "IN"
-            ? `Added ${amount} to ${product.name} — ${product.quantity} in stock.`
-            : `Removed ${amount} from ${product.name} — ${product.quantity} in stock.`,
+            ? `Se añadió ${amount} a ${product.name} — quedan ${product.quantity} en stock.`
+            : `Se retiró ${amount} de ${product.name} — quedan ${product.quantity} en stock.`,
       };
     });
 
@@ -91,14 +91,14 @@ export async function adjustStock(
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
-        return { ok: false, error: "That product no longer exists." };
+        return { ok: false, error: "Ese producto ya no existe." };
       }
       if (error.code === "P2034") {
         // Write conflict under concurrent adjustments — safe to retry.
-        return { ok: false, error: "That product was just updated — try again." };
+        return { ok: false, error: "Ese producto acaba de actualizarse — inténtalo de nuevo." };
       }
       if (error.code === "P2023") {
-        return { ok: false, error: "That amount is too large." };
+        return { ok: false, error: "Esa cantidad es demasiado grande." };
       }
     }
     throw error;

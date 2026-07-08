@@ -43,6 +43,9 @@ const teamMembers = TEAM_USERNAMES.map((username) => {
   return { username, password };
 });
 
+// Initial projects that warehouse materials get dispatched to.
+const PROJECTS = ["PAITA", "ICYP", "CALLIZO", "RIVERA"];
+
 async function main() {
   // Idempotent: wipe and reseed so `db:reset`/`db:seed` are repeatable.
   await prisma.product.deleteMany();
@@ -62,6 +65,12 @@ async function main() {
     })),
   });
   console.log(`Seeded ${teamMembers.length} users (${teamMembers.map((m) => m.username).join(", ")}).`);
+
+  // Initial projects. Materials are dispatched to these (see the Proyectos module).
+  await prisma.projectItem.deleteMany();
+  await prisma.project.deleteMany();
+  await prisma.project.createMany({ data: PROJECTS.map((name) => ({ name })) });
+  console.log(`Seeded ${PROJECTS.length} projects (${PROJECTS.join(", ")}).`);
 }
 
 main()

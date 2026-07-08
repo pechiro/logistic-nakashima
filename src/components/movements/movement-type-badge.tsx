@@ -16,7 +16,7 @@ export function MovementTypeBadge({ type }: { type: MovementType }) {
       ) : (
         <ArrowDown size={12} strokeWidth={2.6} />
       )}
-      {isIn ? "In" : "Out"}
+      {isIn ? "Entrada" : "Salida"}
     </span>
   );
 }

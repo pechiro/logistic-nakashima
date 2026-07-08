@@ -25,7 +25,7 @@ export function StatusBadge({
         aria-hidden
         className={`h-1.5 w-1.5 rounded-full ${out ? "bg-out" : "bg-low-bar"}`}
       />
-      {out ? "Out of stock" : "Low stock"}
+      {out ? "Sin stock" : "Stock bajo"}
     </span>
   );
 }

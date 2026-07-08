@@ -21,10 +21,10 @@ export default async function LoginPage({
             className="h-auto w-[120px] max-w-[150px] rounded-lg object-contain"
           />
           <h1 className="mt-4 font-display text-2xl font-semibold tracking-tight text-ink">
-            Sign in to Logística Grupo Nakashima
+            Iniciar sesión en Logística Grupo Nakashima
           </h1>
           <p className="mt-1 text-sm text-ink-muted">
-            Enter your credentials to access the inventory.
+            Ingresa tus credenciales para acceder al inventario.
           </p>
         </div>
 

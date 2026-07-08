@@ -35,35 +35,35 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Overview" title="Dashboard" />
+      <PageHeader eyebrow="Resumen" title="Panel de Control" />
 
       <div className="px-5 py-6 lg:px-8">
         {totalProducts === 0 ? (
           <EmptyState
             icon={<Package size={22} />}
-            title="No products yet"
-            body="Add products on the Products page and your inventory metrics will appear here."
+            title="Aún no hay productos"
+            body="Añade productos en la página de Productos y tus métricas de inventario aparecerán aquí."
           />
         ) : (
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <StatCard
-                label="Products"
+                label="Productos"
                 value={formatInt(totalProducts)}
-                hint={`${categoryTotals.length} ${categoryTotals.length === 1 ? "category" : "categories"}`}
+                hint={`${categoryTotals.length} ${categoryTotals.length === 1 ? "categoría" : "categorías"}`}
                 icon={Package}
               />
               <StatCard
-                label="Stock value"
+                label="Valor del inventario"
                 value={formatCurrency(totalValue)}
-                hint="Quantity × unit price"
+                hint="Cantidad × precio unitario"
                 icon={CircleDollarSign}
                 tone="ok"
               />
               <StatCard
-                label="Low stock"
+                label="Stock bajo"
                 value={formatInt(lowStockCount)}
-                hint={lowStockCount === 0 ? "All items healthy" : "At or below reorder level"}
+                hint={lowStockCount === 0 ? "Todos los artículos saludables" : "En o por debajo del nivel de reorden"}
                 icon={lowStockCount === 0 ? Boxes : TriangleAlert}
                 tone={lowStockCount === 0 ? "ok" : "low"}
               />
@@ -72,10 +72,10 @@ export default async function DashboardPage() {
             <section className="card p-5 lg:p-6">
               <div className="mb-5">
                 <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
-                  Stock by category
+                  Inventario por categoría
                 </h2>
                 <p className="mt-0.5 text-[13px] text-ink-muted">
-                  Total units on hand across each category.
+                  Total de unidades disponibles en cada categoría.
                 </p>
               </div>
               <CategoryChart data={categoryTotals} />

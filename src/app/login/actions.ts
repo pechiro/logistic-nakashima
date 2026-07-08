@@ -29,7 +29,7 @@ export async function login(
   const next = safeNext(formData.get("next") as string | null);
 
   if (!username || !password) {
-    return { error: "Enter your username and password." };
+    return { error: "Ingresa tu usuario y contraseña." };
   }
 
   const user = await prisma.user.findUnique({ where: { username } });
@@ -39,7 +39,7 @@ export async function login(
     : (verifyPassword(password, "00:00"), false);
 
   if (!ok) {
-    return { error: "Incorrect username or password." };
+    return { error: "Usuario o contraseña incorrectos." };
   }
 
   const cookieStore = await cookies();

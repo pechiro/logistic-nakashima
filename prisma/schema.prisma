@@ -21,6 +21,8 @@ model Product {
   name         String
   sku          String   @unique
   category     String
+  // Optional free-text notes / description. Nullable — blank means unset.
+  description  String?
   // Units currently on hand.
   quantity     Int      @default(0)
   // Price per unit. Stored as a float for now; revisit as integer cents
@@ -32,7 +34,8 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  movements StockMovement[]
+  movements    StockMovement[]
+  projectItems ProjectItem[]
 
   @@index([category])
 }
@@ -55,8 +58,37 @@ model StockMovement {
   type              String // "IN" | "OUT"
   amount            Int // positive magnitude of the change
   resultingQuantity Int // product quantity after this movement
+  // Optional label for the reason of the movement, e.g. "DESPACHO A PROYECTO".
+  note              String?
   createdAt         DateTime @default(now())
 
   @@index([productId])
   @@index([createdAt])
+}
+
+// A project that warehouse materials get dispatched to.
+model Project {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  items ProjectItem[]
+
+  @@index([createdAt])
+}
+
+// Materials assigned to a project. Each row records how much of a product was
+// requested/dispatched to a given project. Creating one deducts warehouse stock
+// (see src/app/proyectos/actions.ts assignMaterial).
+model ProjectItem {
+  id                String   @id @default(cuid())
+  project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId         String
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId         String
+  quantityRequested Int
+  createdAt         DateTime @default(now())
+
+  @@index([projectId])
+  @@index([productId])
 }

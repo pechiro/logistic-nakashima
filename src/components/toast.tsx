@@ -43,7 +43,7 @@ export function Toast({
           type="button"
           onClick={onDismiss}
           className="icon-btn h-7 w-7"
-          aria-label="Dismiss"
+          aria-label="Descartar"
         >
           <X size={15} />
         </button>
