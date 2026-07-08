@@ -148,16 +148,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const navPanelRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Close the mobile menu on navigation.
-  useEffect(() => {
+  // Close the mobile menu on navigation. Comparing against the previously
+  // rendered pathname (instead of a setState-in-effect) avoids a cascading
+  // render while still collapsing the menu whenever the route changes.
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setMenuOpen(false);
-  }, [pathname]);
+  }
 
   // While the mobile menu is open: lock scroll, Escape to close, move focus in,
   // trap Tab within the panel, and restore focus to the trigger on close.
   useEffect(() => {
     if (!menuOpen) return;
     const panel = navPanelRef.current;
+    // Capture the trigger now; the ref may point elsewhere by cleanup time.
+    const menuButton = menuButtonRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -195,7 +201,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       window.clearTimeout(focusTimer);
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKey, true);
-      menuButtonRef.current?.focus();
+      menuButton?.focus();
     };
   }, [menuOpen]);
 

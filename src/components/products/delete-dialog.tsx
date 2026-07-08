@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { TriangleAlert } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 import { deleteProduct } from "@/app/products/actions";
@@ -23,10 +23,15 @@ export function DeleteDialog({
   const [error, setError] = useState<string | null>(null);
 
   // Clear any stale error when the dialog opens or targets a different product,
-  // so a previous failure never shows against the wrong item.
-  useEffect(() => {
-    if (open) setError(null);
-  }, [open, product?.id]);
+  // so a previous failure never shows against the wrong item. Done during render
+  // by comparing against the previously rendered target — the recommended
+  // alternative to a setState-in-effect.
+  const openKey = open ? (product?.id ?? "") : null;
+  const [prevOpenKey, setPrevOpenKey] = useState(openKey);
+  if (openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
+    setError(null);
+  }
 
   function confirm() {
     if (!product) return;

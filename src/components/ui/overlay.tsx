@@ -36,19 +36,32 @@ export function Overlay({
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
   // Keep onClose current without re-running the trap effect (which would steal
-  // focus back to the first field on every parent render).
+  // focus back to the first field on every parent render). Writing the ref in an
+  // effect (not during render) keeps render pure.
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  // Mount as soon as we open. Adjusting state during render (rather than in an
+  // effect) is React's recommended way to derive state from props without a
+  // cascading render — and it mounts the panel without an extra empty frame.
+  if (open && !render) setRender(true);
 
   useEffect(() => {
+    // Drive the enter/exit transition. Both setShown calls run inside a rAF
+    // callback (never synchronously in the effect body) so we don't trigger a
+    // cascading render; unmount happens after the exit transition finishes.
     if (open) {
-      setRender(true);
       const raf = requestAnimationFrame(() => setShown(true));
       return () => cancelAnimationFrame(raf);
     }
-    setShown(false);
+    const raf = requestAnimationFrame(() => setShown(false));
     const timer = setTimeout(() => setRender(false), EXIT_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+    };
   }, [open]);
 
   useEffect(() => {
