@@ -32,6 +32,6 @@ export const config = {
   // extension group lets public/ image files (e.g. the login logo) load without
   // a session — otherwise the auth gate 307-redirects them to /login.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/health|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)$).*)",
   ],
 };
