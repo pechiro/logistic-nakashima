@@ -5,7 +5,10 @@ export const productInputSchema = z.object({
     .string()
     .trim()
     .min(1, "El nombre es obligatorio.")
-    .max(120, "El nombre debe tener menos de 120 caracteres."),
+    .max(120, "El nombre debe tener menos de 120 caracteres.")
+    // Product names are stored uppercase (the form also forces it as you type),
+    // so the catalog stays consistent and duplicate checks line up.
+    .transform((value) => value.toUpperCase()),
   sku: z
     .string()
     .trim()

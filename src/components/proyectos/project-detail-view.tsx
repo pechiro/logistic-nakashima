@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, PackagePlus, Undo2 } from "lucide-react";
+import { ArrowLeft, PackagePlus, Trash2, Undo2 } from "lucide-react";
 import type { MaterialOption, ProjectMaterial, ProjectSummary } from "@/lib/types";
 import { formatDateTime, formatInt } from "@/lib/format";
 import { assignMaterial } from "@/app/proyectos/actions";
@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { Toast } from "@/components/toast";
 import { ReturnDialog } from "./return-dialog";
+import { DiscardItemDialog } from "./discard-item-dialog";
 
 type ToastState = { id: number; message: string; variant: "success" | "error" };
 
@@ -33,6 +34,9 @@ export function ProjectDetailView({
   const [returnOpen, setReturnOpen] = useState(false);
   const [returnTarget, setReturnTarget] = useState<ProjectMaterial | null>(null);
 
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [discardTarget, setDiscardTarget] = useState<ProjectMaterial | null>(null);
+
   const dismiss = useCallback(() => setToast(null), []);
   const notify = (message: string, variant: "success" | "error") =>
     setToast({ id: Date.now(), message, variant });
@@ -44,6 +48,16 @@ export function ProjectDetailView({
   const closeReturn = useCallback(() => setReturnOpen(false), []);
   const onReturned = useCallback((message: string) => {
     setReturnOpen(false);
+    setToast({ id: Date.now(), message, variant: "success" });
+  }, []);
+
+  const askDiscard = useCallback((material: ProjectMaterial) => {
+    setDiscardTarget(material);
+    setDiscardOpen(true);
+  }, []);
+  const closeDiscard = useCallback(() => setDiscardOpen(false), []);
+  const onDiscarded = useCallback((message: string) => {
+    setDiscardOpen(false);
     setToast({ id: Date.now(), message, variant: "success" });
   }, []);
 
@@ -202,15 +216,26 @@ export function ProjectDetailView({
                           {formatDateTime(m.createdAt)}
                         </td>
                         <td className="py-3 pr-5 text-right">
-                          <button
-                            type="button"
-                            onClick={() => askReturn(m)}
-                            aria-label={`Devolver ${m.productName} al almacén`}
-                            className="inline-flex h-8 items-center gap-1 rounded-md border border-line-strong bg-surface px-2.5 text-xs font-semibold text-ink-muted transition-colors hover:bg-surface-2"
-                          >
-                            <Undo2 size={14} strokeWidth={2.4} />
-                            <span className="hidden sm:inline">Devolver</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => askReturn(m)}
+                              aria-label={`Devolver ${m.productName} al almacén`}
+                              className="inline-flex h-8 items-center gap-1 rounded-md border border-line-strong bg-surface px-2.5 text-xs font-semibold text-ink-muted transition-colors hover:bg-surface-2"
+                            >
+                              <Undo2 size={14} strokeWidth={2.4} />
+                              <span className="hidden sm:inline">Devolver</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => askDiscard(m)}
+                              aria-label={`Eliminar ${m.productName} del proyecto`}
+                              className="inline-flex h-8 items-center gap-1 rounded-md border border-out/30 bg-surface px-2.5 text-xs font-semibold text-out transition-colors hover:bg-out-weak"
+                            >
+                              <Trash2 size={14} strokeWidth={2.4} />
+                              <span className="hidden sm:inline">Eliminar</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -227,6 +252,12 @@ export function ProjectDetailView({
         material={returnTarget}
         onClose={closeReturn}
         onReturned={onReturned}
+      />
+      <DiscardItemDialog
+        open={discardOpen}
+        material={discardTarget}
+        onClose={closeDiscard}
+        onDiscarded={onDiscarded}
       />
 
       {toast && (

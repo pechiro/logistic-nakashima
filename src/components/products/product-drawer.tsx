@@ -151,12 +151,16 @@ function ProductForm({
             type="text"
             data-autofocus
             value={values.name}
-            onChange={set("name")}
-            placeholder="p. ej. Teclado mecánico, TKL"
+            // Force uppercase in real time as the user types.
+            onChange={(e) =>
+              setValues((prev) => ({ ...prev, name: e.target.value.toUpperCase() }))
+            }
+            placeholder="P. EJ. TECLADO MECÁNICO, TKL"
             maxLength={120}
+            autoCapitalize="characters"
             aria-invalid={!!fieldErrors.name}
             aria-describedby={describedBy("name")}
-            className="input"
+            className="input uppercase"
           />
         </Field>
 

@@ -284,3 +284,45 @@ export async function returnMaterial(
     throw error;
   }
 }
+
+/**
+ * Eliminar una asignación del registro de un proyecto SIN devolver stock al
+ * almacén. Se usa cuando el material se consumió o se perdió en obra: la salida
+ * ya se registró al despachar, así que aquí solo se borra la fila de ProjectItem
+ * — no cambia Product.quantity ni se crea un movimiento. Revalida las páginas de
+ * proyectos (el stock del almacén no cambia).
+ */
+export async function discardProjectItem(
+  projectItemId: string,
+): Promise<ProjectActionResult> {
+  if (typeof projectItemId !== "string" || projectItemId.length === 0) {
+    return { ok: false, error: "Falta la asignación a eliminar." };
+  }
+
+  try {
+    const item = await prisma.projectItem.findUnique({
+      where: { id: projectItemId },
+      select: { projectId: true, product: { select: { name: true } } },
+    });
+    if (!item) {
+      return { ok: false, error: "Esa asignación ya no existe." };
+    }
+
+    await prisma.projectItem.delete({ where: { id: projectItemId } });
+
+    revalidatePath(`/proyectos/${item.projectId}`);
+    revalidatePath("/proyectos");
+    return {
+      ok: true,
+      message: `Se eliminó ${item.product.name} del proyecto (sin devolver stock al almacén).`,
+    };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return { ok: false, error: "Esa asignación ya fue eliminada." };
+    }
+    throw error;
+  }
+}

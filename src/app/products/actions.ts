@@ -34,6 +34,24 @@ export async function saveProduct(
     return { ok: false, fieldErrors: fieldErrorsFromZod(parsed.error) };
   }
 
+  // Block duplicate names (case-insensitive) so the same product can't be added
+  // twice. On edit, exclude the product itself so re-saving is allowed.
+  const duplicate = await prisma.product.findFirst({
+    where: {
+      name: { equals: parsed.data.name, mode: "insensitive" },
+      ...(id ? { NOT: { id } } : {}),
+    },
+    select: { id: true },
+  });
+  if (duplicate) {
+    return {
+      ok: false,
+      fieldErrors: {
+        name: "No se puede añadir ya que el producto ya se encuentra en el inventario.",
+      },
+    };
+  }
+
   try {
     if (id) {
       await prisma.product.update({ where: { id }, data: parsed.data });
