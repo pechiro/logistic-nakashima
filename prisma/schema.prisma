@@ -55,7 +55,13 @@ model StockMovement {
   id                String   @id @default(cuid())
   product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId         String
-  type              String // "IN" | "OUT"
+  // Project this movement relates to, when any: set for a dispatch to a project
+  // ("OUT") and a return from a project ("RETURN"). Null for plain warehouse
+  // Entrada/Salida. SetNull so deleting a project keeps the historical movement
+  // (it just unlinks the project name).
+  project           Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId         String?
+  type              String // "IN" | "OUT" | "RETURN"
   amount            Int // positive magnitude of the change
   resultingQuantity Int // product quantity after this movement
   // Optional label for the reason of the movement, e.g. "DESPACHO A PROYECTO".
@@ -63,6 +69,7 @@ model StockMovement {
   createdAt         DateTime @default(now())
 
   @@index([productId])
+  @@index([projectId])
   @@index([createdAt])
 }
 
@@ -72,7 +79,8 @@ model Project {
   name      String   @unique
   createdAt DateTime @default(now())
 
-  items ProjectItem[]
+  items     ProjectItem[]
+  movements StockMovement[]
 
   @@index([createdAt])
 }

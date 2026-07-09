@@ -11,7 +11,9 @@ export type ProductListItem = {
   reorderLevel: number;
 };
 
-export type MovementType = "IN" | "OUT";
+// "IN"/"OUT" are plain warehouse Entrada/Salida; "RETURN" (Devolución) is stock
+// coming back from a project — inbound like IN, but labelled distinctly.
+export type MovementType = "IN" | "OUT" | "RETURN";
 
 // -- Proyectos ---------------------------------------------------------------
 

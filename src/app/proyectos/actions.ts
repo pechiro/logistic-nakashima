@@ -11,10 +11,11 @@ export type ProjectActionResult =
 const MAX_NAME = 80;
 const MAX_AMOUNT = 1_000_000;
 
-// Etiqueta con la que se registra en Movimientos un despacho a proyecto.
-// (Los módulos "use server" solo pueden exportar funciones async, así que
-// esta constante se mantiene local al archivo.)
+// Etiquetas con las que se registran los movimientos de proyecto en el historial.
+// (Los módulos "use server" solo pueden exportar funciones async, así que estas
+// constantes se mantienen locales al archivo.)
 const DISPATCH_NOTE = "DESPACHO A PROYECTO";
+const RETURN_NOTE = "DEVOLUCIÓN DE PROYECTO";
 
 /** Crear un proyecto nuevo. Los nombres son únicos. */
 export async function createProject(
@@ -115,10 +116,12 @@ export async function assignMaterial(
         data: { projectId, productId, quantityRequested: amount },
       });
 
-      // Registrar el despacho en el historial de Movimientos.
+      // Registrar el despacho en el historial de Movimientos, enlazado al
+      // proyecto para que Movimientos muestre a qué proyecto fue.
       await tx.stockMovement.create({
         data: {
           productId,
+          projectId,
           type: "OUT",
           amount,
           resultingQuantity: product.quantity,
@@ -149,6 +152,130 @@ export async function assignMaterial(
       }
       if (error.code === "P2025" || error.code === "P2003") {
         return { ok: false, error: "Ese material o proyecto ya no existe." };
+      }
+      if (error.code === "P2023") {
+        return { ok: false, error: "Esa cantidad es demasiado grande." };
+      }
+    }
+    throw error;
+  }
+}
+
+/**
+ * Devolver material de un proyecto al almacén. Corre una sola transacción que:
+ * valida la asignación, descuenta la cantidad devuelta de `ProjectItem`
+ * (decremento atómico con guarda para que dos devoluciones simultáneas no puedan
+ * devolver de más), borra la asignación si queda en cero, vuelve a sumar el stock
+ * al almacén y deja un movimiento "RETURN" ("DEVOLUCIÓN DE PROYECTO") enlazado al
+ * proyecto. Revalida cada página cuyos números cambian.
+ */
+export async function returnMaterial(
+  projectItemId: string,
+  amountInput: number,
+): Promise<ProjectActionResult> {
+  // La entrada es no confiable — validar todo aquí.
+  if (typeof projectItemId !== "string" || projectItemId.length === 0) {
+    return { ok: false, error: "Falta la asignación a devolver." };
+  }
+  const amount = Math.trunc(Number(amountInput));
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { ok: false, error: "Ingresa una cantidad mayor que cero." };
+  }
+  if (amount > MAX_AMOUNT) {
+    return {
+      ok: false,
+      error: `Mantén la cantidad por debajo de ${MAX_AMOUNT.toLocaleString("es-PE")}.`,
+    };
+  }
+
+  try {
+    const outcome = await prisma.$transaction(async (tx) => {
+      const item = await tx.projectItem.findUnique({
+        where: { id: projectItemId },
+        select: {
+          projectId: true,
+          productId: true,
+          quantityRequested: true,
+          product: { select: { name: true } },
+        },
+      });
+      if (!item) {
+        return { ok: false as const, error: "Esa asignación ya no existe." };
+      }
+      if (amount > item.quantityRequested) {
+        return {
+          ok: false as const,
+          error: `Solo puedes devolver hasta ${item.quantityRequested} — el proyecto tiene esa cantidad asignada.`,
+        };
+      }
+
+      // Decremento atómico con guarda: solo baja la asignación cuando todavía
+      // alcanza, así dos devoluciones simultáneas no la dejan por debajo de 0.
+      const decremented = await tx.projectItem.updateMany({
+        where: { id: projectItemId, quantityRequested: { gte: amount } },
+        data: { quantityRequested: { decrement: amount } },
+      });
+      if (decremented.count === 0) {
+        return {
+          ok: false as const,
+          error: "La asignación se acaba de actualizar — inténtalo de nuevo.",
+        };
+      }
+
+      // Si ya no queda nada asignado, elimina la fila para que la lista de
+      // "Materiales asignados" solo muestre lo que sigue en el proyecto.
+      const remaining = await tx.projectItem.findUnique({
+        where: { id: projectItemId },
+        select: { quantityRequested: true },
+      });
+      if (remaining && remaining.quantityRequested <= 0) {
+        await tx.projectItem.delete({ where: { id: projectItemId } });
+      }
+
+      // Devolver la cantidad al stock del almacén.
+      const product = await tx.product.update({
+        where: { id: item.productId },
+        data: { quantity: { increment: amount } },
+        select: { name: true, quantity: true },
+      });
+
+      // Registrar la devolución en el historial de Movimientos, enlazada al
+      // proyecto de origen.
+      await tx.stockMovement.create({
+        data: {
+          productId: item.productId,
+          projectId: item.projectId,
+          type: "RETURN",
+          amount,
+          resultingQuantity: product.quantity,
+          note: RETURN_NOTE,
+        },
+      });
+
+      return {
+        ok: true as const,
+        projectId: item.projectId,
+        message: `Se devolvieron ${amount} de ${product.name} al almacén — ahora hay ${product.quantity} en stock.`,
+      };
+    });
+
+    if (outcome.ok) {
+      revalidatePath(`/proyectos/${outcome.projectId}`);
+      revalidatePath("/proyectos");
+      revalidatePath("/stock");
+      revalidatePath("/products");
+      revalidatePath("/movements");
+      revalidatePath("/");
+    }
+    return outcome;
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2034") {
+        // Conflicto de escritura por devoluciones concurrentes — se puede reintentar.
+        return { ok: false, error: "La asignación se acaba de actualizar — inténtalo de nuevo." };
+      }
+      if (error.code === "P2025" || error.code === "P2003") {
+        return { ok: false, error: "Ese material o asignación ya no existe." };
       }
       if (error.code === "P2023") {
         return { ok: false, error: "Esa cantidad es demasiado grande." };

@@ -2,13 +2,14 @@
 
 import { useCallback, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, PackagePlus } from "lucide-react";
+import { ArrowLeft, PackagePlus, Undo2 } from "lucide-react";
 import type { MaterialOption, ProjectMaterial, ProjectSummary } from "@/lib/types";
 import { formatDateTime, formatInt } from "@/lib/format";
 import { assignMaterial } from "@/app/proyectos/actions";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { Toast } from "@/components/toast";
+import { ReturnDialog } from "./return-dialog";
 
 type ToastState = { id: number; message: string; variant: "success" | "error" };
 
@@ -29,9 +30,22 @@ export function ProjectDetailView({
   const [pending, startTransition] = useTransition();
   const [toast, setToast] = useState<ToastState | null>(null);
 
+  const [returnOpen, setReturnOpen] = useState(false);
+  const [returnTarget, setReturnTarget] = useState<ProjectMaterial | null>(null);
+
   const dismiss = useCallback(() => setToast(null), []);
   const notify = (message: string, variant: "success" | "error") =>
     setToast({ id: Date.now(), message, variant });
+
+  const askReturn = useCallback((material: ProjectMaterial) => {
+    setReturnTarget(material);
+    setReturnOpen(true);
+  }, []);
+  const closeReturn = useCallback(() => setReturnOpen(false), []);
+  const onReturned = useCallback((message: string) => {
+    setReturnOpen(false);
+    setToast({ id: Date.now(), message, variant: "success" });
+  }, []);
 
   const selected = useMemo(
     () => products.find((p) => p.id === productId) ?? null,
@@ -164,8 +178,11 @@ export function ProjectDetailView({
                       <th scope="col" className={`${TH} text-right`}>
                         Cantidad
                       </th>
-                      <th scope="col" className={`${TH} pr-5 text-right`}>
+                      <th scope="col" className={`${TH} text-right`}>
                         Fecha
+                      </th>
+                      <th scope="col" className={`${TH} pr-5 text-right`}>
+                        Acciones
                       </th>
                     </tr>
                   </thead>
@@ -181,8 +198,19 @@ export function ProjectDetailView({
                         <td className="py-3 pr-3 text-right font-medium tabular-nums text-ink">
                           {formatInt(m.quantityRequested)}
                         </td>
-                        <td className="whitespace-nowrap py-3 pr-5 text-right text-ink-muted">
+                        <td className="whitespace-nowrap py-3 pr-3 text-right text-ink-muted">
                           {formatDateTime(m.createdAt)}
+                        </td>
+                        <td className="py-3 pr-5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => askReturn(m)}
+                            aria-label={`Devolver ${m.productName} al almacén`}
+                            className="inline-flex h-8 items-center gap-1 rounded-md border border-line-strong bg-surface px-2.5 text-xs font-semibold text-ink-muted transition-colors hover:bg-surface-2"
+                          >
+                            <Undo2 size={14} strokeWidth={2.4} />
+                            <span className="hidden sm:inline">Devolver</span>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -193,6 +221,13 @@ export function ProjectDetailView({
           )}
         </section>
       </div>
+
+      <ReturnDialog
+        open={returnOpen}
+        material={returnTarget}
+        onClose={closeReturn}
+        onReturned={onReturned}
+      />
 
       {toast && (
         <Toast

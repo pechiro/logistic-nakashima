@@ -1,4 +1,4 @@
-import { History } from "lucide-react";
+import { FolderKanban, History } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime, formatInt } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
@@ -17,7 +17,11 @@ export default async function MovementsPage() {
   const movements = await prisma.stockMovement.findMany({
     orderBy: { createdAt: "desc" },
     take: RECENT_LIMIT,
-    include: { product: { select: { name: true, sku: true } } },
+    include: {
+      product: { select: { name: true, sku: true } },
+      // The destination/origin project, when the movement is a dispatch or return.
+      project: { select: { name: true } },
+    },
   });
 
   return (
@@ -57,7 +61,8 @@ export default async function MovementsPage() {
                   </thead>
                   <tbody>
                     {movements.map((m) => {
-                      const isIn = m.type === "IN";
+                      // IN and RETURN both add stock back to the warehouse.
+                      const isInbound = m.type === "IN" || m.type === "RETURN";
                       return (
                         <tr
                           key={m.id}
@@ -79,14 +84,20 @@ export default async function MovementsPage() {
                                   {m.note}
                                 </span>
                               )}
+                              {m.project && (
+                                <span className="inline-flex items-center gap-1 rounded border border-line bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+                                  <FolderKanban size={11} strokeWidth={2.4} />
+                                  {m.project.name}
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td
                             className={`py-3 pr-3 text-right font-medium tabular-nums ${
-                              isIn ? "text-ok" : "text-ink"
+                              isInbound ? "text-ok" : "text-ink"
                             }`}
                           >
-                            {isIn ? "+" : "−"}
+                            {isInbound ? "+" : "−"}
                             {formatInt(m.amount)}
                           </td>
                           <td className="py-3 pr-3 text-right font-medium tabular-nums text-ink">
