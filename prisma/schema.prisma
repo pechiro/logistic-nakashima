@@ -21,6 +21,13 @@ model Product {
   name         String
   sku          String   @unique
   category     String
+  // Secondary classification / specialty of the material (e.g. "Soporte", "ACI",
+  // "DACI", or any custom value). Nullable — blank means unset.
+  specialty    String?
+  // Physical size / measure, free text (e.g. 2", 1/2", 4"). Nullable.
+  measure      String?
+  // URL to an external reference image for this product. Nullable — blank = unset.
+  imageUrl     String?
   // Optional free-text notes / description. Nullable — blank means unset.
   description  String?
   // Units currently on hand.
@@ -75,14 +82,21 @@ model StockMovement {
 
 // A project that warehouse materials get dispatched to.
 model Project {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
+  id   String @id @default(cuid())
+  name String @unique
+  // "ACTIVE" | "COMPLETED". Stored as a String (not a Postgres enum) to match
+  // how StockMovement.type is modelled; see ProjectStatus in src/lib/types.ts.
+  status String @default("ACTIVE")
+  // When the project was marked finished. Null while ACTIVE; used to order the
+  // "Finalizados" section most-recently-finished first.
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
 
   items     ProjectItem[]
   movements StockMovement[]
 
   @@index([createdAt])
+  @@index([status])
 }
 
 // Materials assigned to a project. Each row records how much of a product was

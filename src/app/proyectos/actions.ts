@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
+import type { ProjectStatus } from "@/lib/types";
 
 export type ProjectActionResult =
   | { ok: true; message: string }
@@ -42,6 +43,54 @@ export async function createProject(
 
   revalidatePath("/proyectos");
   return { ok: true, message: "Proyecto creado." };
+}
+
+/**
+ * Marcar un proyecto como finalizado, o reabrirlo. Es reversible: "Finalizado"
+ * solo cambia dónde y cómo aparece el proyecto en la lista, no bloquea ni borra
+ * nada. `completedAt` se limpia al reabrir para que la sección "Finalizados"
+ * siempre ordene por la fecha en que se finalizó de verdad.
+ */
+export async function setProjectStatus(
+  projectId: string,
+  status: ProjectStatus,
+): Promise<ProjectActionResult> {
+  if (typeof projectId !== "string" || projectId.length === 0) {
+    return { ok: false, error: "Falta el proyecto." };
+  }
+  // La entrada del cliente es no confiable: solo se aceptan los dos estados.
+  if (status !== "ACTIVE" && status !== "COMPLETED") {
+    return { ok: false, error: "Estado de proyecto no válido." };
+  }
+
+  try {
+    const project = await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        status,
+        completedAt: status === "COMPLETED" ? new Date() : null,
+      },
+      select: { name: true },
+    });
+
+    revalidatePath("/proyectos");
+    revalidatePath(`/proyectos/${projectId}`);
+    return {
+      ok: true,
+      message:
+        status === "COMPLETED"
+          ? `Se marcó ${project.name} como finalizado.`
+          : `Se reabrió ${project.name}.`,
+    };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return { ok: false, error: "Ese proyecto ya no existe." };
+    }
+    throw error;
+  }
 }
 
 /**

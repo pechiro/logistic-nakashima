@@ -11,6 +11,8 @@ import { EmptyState } from "@/components/empty-state";
 import { Toast } from "@/components/toast";
 import { ReturnDialog } from "./return-dialog";
 import { DiscardItemDialog } from "./discard-item-dialog";
+import { MaterialCombobox } from "./material-combobox";
+import { ProjectStatusToggle } from "./project-status-toggle";
 
 type ToastState = { id: number; message: string; variant: "success" | "error" };
 
@@ -94,11 +96,23 @@ export function ProjectDetailView({
 
   return (
     <>
-      <PageHeader eyebrow="Proyecto" title={project.name}>
-        <Link href="/proyectos" className="btn btn-secondary">
-          <ArrowLeft size={16} />
-          <span className="hidden sm:inline">Proyectos</span>
-        </Link>
+      <PageHeader
+        eyebrow={project.status === "COMPLETED" ? "Proyecto · Finalizado" : "Proyecto"}
+        title={project.name}
+      >
+        <div className="flex shrink-0 items-center gap-2">
+          <ProjectStatusToggle
+            projectId={project.id}
+            projectName={project.name}
+            status={project.status}
+            onResult={notify}
+            variant="button"
+          />
+          <Link href="/proyectos" className="btn btn-secondary" aria-label="Volver a Proyectos">
+            <ArrowLeft size={16} />
+            <span className="hidden sm:inline">Proyectos</span>
+          </Link>
+        </div>
       </PageHeader>
 
       <div className="space-y-6 px-5 py-6 lg:px-8">
@@ -116,25 +130,18 @@ export function ProjectDetailView({
             </p>
           ) : (
             <form onSubmit={submit} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-              <div className="flex-1">
+              {/* min-w-0 so the picker can shrink when the form goes horizontal. */}
+              <div className="min-w-0 flex-1">
                 <label htmlFor="material" className="field-label">
                   Material
                 </label>
-                <select
+                <MaterialCombobox
                   id="material"
-                  value={productId}
-                  onChange={(e) => setProductId(e.target.value)}
-                  className="input w-full"
-                >
-                  <option value="" disabled>
-                    Selecciona un material…
-                  </option>
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id} disabled={p.quantity <= 0}>
-                      {p.name} ({p.sku}) — {p.quantity} en stock
-                    </option>
-                  ))}
-                </select>
+                  products={products}
+                  value={productId || null}
+                  onChange={(id) => setProductId(id ?? "")}
+                  disabled={pending}
+                />
               </div>
               <div className="w-full sm:w-32">
                 <label htmlFor="qty" className="field-label">
@@ -155,7 +162,7 @@ export function ProjectDetailView({
               <button
                 type="submit"
                 disabled={pending || !productId}
-                className="btn btn-primary"
+                className="btn btn-primary shrink-0"
               >
                 <PackagePlus size={16} />
                 {pending ? "Asignando…" : "Asignar"}
@@ -182,7 +189,9 @@ export function ProjectDetailView({
             />
           ) : (
             <div className="card overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* `relative` so any absolutely-positioned descendant is clipped
+                  by this scroller rather than widening the page. */}
+              <div className="relative overflow-x-auto">
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-line">

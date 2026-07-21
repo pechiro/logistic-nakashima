@@ -43,6 +43,12 @@
 @layer base {
   html {
     color-scheme: light;
+    /* Backstop: nothing may scroll the page sideways on a phone. `clip` rather
+       than `hidden` on purpose — `overflow-x: hidden` turns the root into a
+       scroll container, which silently breaks every `position: sticky` header
+       in the app. `clip` doesn't. The real fixes are min-w-0 / flex-wrap on the
+       rows that used to overflow; this just stops the next one from shipping. */
+    overflow-x: clip;
   }
   body {
     background: var(--color-canvas);

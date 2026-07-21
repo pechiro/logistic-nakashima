@@ -114,7 +114,69 @@ export function StockView({ products }: { products: ProductListItem[] }) {
           />
         ) : (
           <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Phones: stacked cards. The table's Ajustar column alone is 240px
+                wide, so on a ~350px card the Entrada/Salida buttons sat off
+                screen behind a sideways scroll. */}
+            <ul className="md:hidden">
+              {filtered.map((p) => {
+                const low = isLowStock(p.quantity, p.reorderLevel);
+                const status = stockStatus(p.quantity, p.reorderLevel);
+                return (
+                  <li
+                    key={p.id}
+                    data-low={low}
+                    className={`border-b border-l-[3px] border-line p-4 last:border-b-0 data-[low=true]:bg-low-weak/50 ${
+                      status === "out"
+                        ? "border-l-out"
+                        : status === "low"
+                          ? "border-l-low-bar"
+                          : "border-l-transparent"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="break-words font-medium text-ink">{p.name}</p>
+                        <p className="mt-0.5 truncate font-mono text-[12px] text-ink-muted">
+                          {p.sku}
+                        </p>
+                      </div>
+                      <div className="shrink-0">
+                        <StatusBadge
+                          quantity={p.quantity}
+                          reorderLevel={p.reorderLevel}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-end justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-display text-[15px] font-semibold leading-none tabular-nums text-ink">
+                          {formatInt(p.quantity)}
+                        </div>
+                        <StockGauge
+                          quantity={p.quantity}
+                          reorderLevel={p.reorderLevel}
+                          className="mt-1.5"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <StockAdjustControls
+                        productId={p.id}
+                        name={p.name}
+                        quantity={p.quantity}
+                        onResult={notify}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* md and up: the table. `relative` clips the absolutely-positioned
+                .sr-only labels inside StockAdjustControls; see product-table.tsx. */}
+            <div className="relative hidden overflow-x-auto md:block">
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-line">

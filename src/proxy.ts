@@ -6,15 +6,26 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 // Proxy runs on the Node.js runtime in Next 16, so the crypto in verifySessionToken works here.
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isAuthed = verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value) !== null;
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  // Rejects forged *and* idle-expired tokens — the expiry is inside the payload.
+  const isAuthed = verifySessionToken(token) !== null;
   const isLogin = pathname === "/login";
 
   if (!isAuthed && !isLogin) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.search = "";
     // Remember where they were headed so we can return them after login.
     if (pathname !== "/") url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    // A cookie that was sent but didn't verify means the session timed out (or
+    // was tampered with). Say so on the login screen rather than bouncing them
+    // with no explanation.
+    if (token) url.searchParams.set("expired", "1");
+
+    const response = NextResponse.redirect(url);
+    // Stop the browser from replaying a dead cookie on every subsequent request.
+    if (token) response.cookies.delete(SESSION_COOKIE);
+    return response;
   }
 
   if (isAuthed && isLogin) {

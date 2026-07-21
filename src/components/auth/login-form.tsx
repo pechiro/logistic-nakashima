@@ -1,13 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
-import { LogIn } from "lucide-react";
+import { useActionState, useState } from "react";
+import { Eye, EyeOff, LogIn } from "lucide-react";
 import { login, type LoginResult } from "@/app/login/actions";
 
 const initialState: LoginResult = { error: "" };
 
 export function LoginForm({ next }: { next: string }) {
   const [state, formAction, pending] = useActionState(login, initialState);
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -34,16 +35,29 @@ export function LoginForm({ next }: { next: string }) {
         <label htmlFor="password" className="field-label">
           Contraseña
         </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          className="input"
-          placeholder="••••••••"
-          aria-invalid={state.error ? true : undefined}
-        />
+        <div className="relative">
+          <input
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            required
+            className="input pr-11"
+            placeholder="••••••••"
+            aria-invalid={state.error ? true : undefined}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((shown) => !shown)}
+            aria-pressed={showPassword}
+            aria-controls="password"
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-md text-ink-faint transition-colors hover:text-ink"
+          >
+            {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+          </button>
+        </div>
       </div>
 
       {state.error ? (

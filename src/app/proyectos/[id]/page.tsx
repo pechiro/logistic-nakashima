@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ProjectDetailView } from "@/components/proyectos/project-detail-view";
-import type { MaterialOption, ProjectMaterial } from "@/lib/types";
+import { toProjectStatus, type MaterialOption, type ProjectMaterial } from "@/lib/types";
 
 // Siempre leer el proyecto actual; los despachos revalidan esta ruta.
 export const dynamic = "force-dynamic";
@@ -18,6 +18,7 @@ export default async function ProjectDetailPage({
     select: {
       id: true,
       name: true,
+      status: true,
       items: {
         orderBy: { createdAt: "desc" },
         select: {
@@ -54,7 +55,11 @@ export default async function ProjectDetailPage({
 
   return (
     <ProjectDetailView
-      project={{ id: project.id, name: project.name }}
+      project={{
+        id: project.id,
+        name: project.name,
+        status: toProjectStatus(project.status),
+      }}
       materials={materials}
       products={options}
     />

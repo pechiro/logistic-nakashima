@@ -22,8 +22,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Logística Grupo Nakashima — Inventario",
+  applicationName: "NKS Ops",
+  title: "NKS Ops — Inventario",
   description: "Controla productos y niveles de stock de un vistazo.",
+  appleWebApp: { title: "NKS Ops" },
 };
 
 export default function RootLayout({

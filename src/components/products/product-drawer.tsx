@@ -1,17 +1,30 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { ChevronDown, Sparkles, X } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Camera, ChevronDown, Image as ImageIcon, Sparkles, X } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
-import { saveProduct, type SaveResult } from "@/app/products/actions";
+import {
+  saveProduct,
+  uploadProductImageAction,
+  type SaveResult,
+} from "@/app/products/actions";
+
+// Client-side pre-check limit; the server enforces the real one (see
+// MAX_IMAGE_BYTES in src/lib/supabase-storage.ts). Kept in sync by hand because
+// that module is server-only (it imports node:crypto).
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 import type { FieldErrors } from "@/lib/validation";
 import type { ProductListItem } from "@/lib/types";
 
 const CATEGORY_LIST_ID = "product-category-options";
+const SPECIALTY_LIST_ID = "product-specialty-options";
 const INITIAL_STATE: SaveResult = { ok: false };
 
 // Fixed category options; "Otros" reveals a free-text field for anything else.
 const PREDEFINED_CATEGORIES = ["Herramientas", "Material", "Consumible", "EPP"] as const;
+
+// Suggested specialties surfaced in the datalist; any custom value is allowed.
+const SPECIALTY_OPTIONS = ["Soporte", "ACI", "DACI"] as const;
 
 // Unambiguous charset (no 0/O/1/I) for readable, effectively-unique SKUs.
 // Collisions are astronomically unlikely, and the server rejects dupes anyway.
@@ -94,14 +107,21 @@ function ProductForm({
   onSaved: (message: string) => void;
   onCancel: () => void;
 }) {
-  const [state, formAction, pending] = useActionState(saveProduct, INITIAL_STATE);
-  const handled = useRef(false);
+  // Save runs inside a transition (not a <form action>) and closes the drawer on
+  // success. This deliberately mirrors the delete/assign/return mutations: it
+  // keeps the page mounted and preserves the user's scroll position instead of
+  // resetting to the top the way a server-action form submit did.
+  const [result, setResult] = useState<SaveResult>(INITIAL_STATE);
+  const [pending, startTransition] = useTransition();
 
   // Controlled inputs: React 19 resets uncontrolled fields after a form action
   // completes, which would wipe the user's entries on a validation error.
   const [values, setValues] = useState(() => ({
     name: editing?.name ?? "",
     sku: editing?.sku ?? "",
+    specialty: editing?.specialty ?? "",
+    measure: editing?.measure ?? "",
+    imageUrl: editing?.imageUrl ?? "",
     description: editing?.description ?? "",
     quantity: editing ? String(editing.quantity) : "0",
     reorderLevel: editing ? String(editing.reorderLevel) : "0",
@@ -125,22 +145,62 @@ function ProductForm({
   );
   const resolvedCategory = categoryChoice === "Otros" ? customCategory : categoryChoice;
 
-  useEffect(() => {
-    if (state.ok && !handled.current) {
-      handled.current = true;
-      onSaved(state.message);
-    }
-  }, [state, onSaved]);
+  // Reference-image upload state. The resulting public URL lives in
+  // values.imageUrl and is submitted via a hidden field, so saveProduct persists
+  // it exactly like before — this works for a not-yet-created product too.
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
-  const fieldErrors: FieldErrors = (!state.ok && state.fieldErrors) || {};
-  const formError = !state.ok ? state.formError : undefined;
+  async function onImageChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // let the same file be re-picked later
+    if (!file) return;
+    setImageError(null);
+    if (!file.type.startsWith("image/")) {
+      setImageError("El archivo debe ser una imagen.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError("La imagen supera el límite de 8 MB.");
+      return;
+    }
+    setImageUploading(true);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      const outcome = await uploadProductImageAction(data);
+      if (outcome.ok) setValues((prev) => ({ ...prev, imageUrl: outcome.url }));
+      else setImageError(outcome.error);
+    } catch {
+      setImageError("No se pudo subir la imagen.");
+    } finally {
+      setImageUploading(false);
+    }
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pending) return;
+    // FormData off the live form captures every named input (including the
+    // controlled fields and the hidden id/category), matching the shape the
+    // saveProduct server action expects.
+    const formData = new FormData(event.currentTarget);
+    startTransition(async () => {
+      const outcome = await saveProduct(INITIAL_STATE, formData);
+      if (outcome.ok) onSaved(outcome.message);
+      else setResult(outcome);
+    });
+  }
+
+  const fieldErrors: FieldErrors = (!result.ok && result.fieldErrors) || {};
+  const formError = !result.ok ? result.formError : undefined;
 
   // Point each input at its error (or hint) message so screen readers announce it.
   const describedBy = (field: keyof FieldErrors, hasHint = false) =>
     fieldErrors[field] ? `${field}-error` : hasHint ? `${field}-hint` : undefined;
 
   return (
-    <form action={formAction} className="flex min-h-0 flex-1 flex-col">
+    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
       <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
         {editing && <input type="hidden" name="id" value={editing.id} />}
 
@@ -253,6 +313,48 @@ function ProductForm({
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
+          <Field
+            label="Especialidad"
+            htmlFor="specialty"
+            optional
+            error={fieldErrors.specialty}
+          >
+            <input
+              id="specialty"
+              name="specialty"
+              type="text"
+              list={SPECIALTY_LIST_ID}
+              value={values.specialty}
+              onChange={set("specialty")}
+              placeholder="Soporte, ACI, DACI…"
+              maxLength={40}
+              aria-invalid={!!fieldErrors.specialty}
+              aria-describedby={describedBy("specialty")}
+              className="input"
+            />
+            <datalist id={SPECIALTY_LIST_ID}>
+              {SPECIALTY_OPTIONS.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
+          </Field>
+          <Field label="Medida" htmlFor="measure" optional error={fieldErrors.measure}>
+            <input
+              id="measure"
+              name="measure"
+              type="text"
+              value={values.measure}
+              onChange={set("measure")}
+              placeholder={'2", 1/2", 4"'}
+              maxLength={40}
+              aria-invalid={!!fieldErrors.measure}
+              aria-describedby={describedBy("measure")}
+              className="input"
+            />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <Field label="En stock" htmlFor="quantity" error={fieldErrors.quantity}>
             <input
               id="quantity"
@@ -309,6 +411,75 @@ function ProductForm({
               aria-describedby={describedBy("unitPrice")}
               className="input tnum pl-7"
             />
+          </div>
+        </Field>
+
+        <Field
+          label="Imagen de Referencia"
+          htmlFor="imageUpload"
+          optional
+          error={fieldErrors.imageUrl ?? imageError ?? undefined}
+          hint="Toma una foto o elige una de la galería; se sube automáticamente."
+        >
+          {/* The persisted value: the public URL of the uploaded photo. */}
+          <input type="hidden" name="imageUrl" value={values.imageUrl} />
+          <div className="flex items-center gap-3">
+            {values.imageUrl ? (
+              <a
+                href={values.imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0"
+                title="Ver imagen en otra pestaña"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={values.imageUrl}
+                  alt="Vista previa"
+                  className="h-16 w-16 rounded-md border border-line object-cover"
+                />
+              </a>
+            ) : (
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border border-dashed border-line-strong text-ink-faint">
+                <ImageIcon size={20} />
+              </div>
+            )}
+            <div className="flex flex-col items-start gap-2">
+              <label
+                className={`btn btn-secondary cursor-pointer ${
+                  imageUploading ? "pointer-events-none opacity-55" : ""
+                }`}
+              >
+                <Camera size={16} />
+                {imageUploading
+                  ? "Subiendo…"
+                  : values.imageUrl
+                    ? "Cambiar foto"
+                    : "Tomar / Subir foto"}
+                <input
+                  id="imageUpload"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="sr-only"
+                  disabled={imageUploading}
+                  aria-describedby={describedBy("imageUrl", true)}
+                  onChange={onImageChange}
+                />
+              </label>
+              {values.imageUrl && !imageUploading && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setValues((prev) => ({ ...prev, imageUrl: "" }));
+                    setImageError(null);
+                  }}
+                  className="text-left text-xs font-medium text-out hover:underline"
+                >
+                  Quitar foto
+                </button>
+              )}
+            </div>
           </div>
         </Field>
 

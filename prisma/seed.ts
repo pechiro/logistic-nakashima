@@ -27,50 +27,50 @@ const products = [
   { name: "Merino Beanie", sku: "APP-3145", category: "Apparel", quantity: 9, reorderLevel: 20, unitPrice: 24.0 },
 ];
 
-// Five authorized team members. Usernames live in code; passwords come from the
-// environment so real credentials never land in git. Set SEED_PW_<USERNAME> in
-// .env (git-ignored) — see .env.example for the keys. Passwords are stored hashed.
-const TEAM_USERNAMES = ["rbocanegra", "jtuller", "gsalazar", "churtado", "dianahol"];
-
-const teamMembers = TEAM_USERNAMES.map((username) => {
-  const key = `SEED_PW_${username.toUpperCase()}`;
-  const password = process.env[key];
-  if (!password) {
-    throw new Error(
-      `Missing ${key} — set team passwords in .env before seeding (see .env.example).`,
-    );
-  }
-  return { username, password };
-});
+// Only the "cucho" login is seeded, and non-destructively (see main). No
+// predefined team list is inserted or recreated — every other user is managed
+// directly (e.g. in the Supabase Dashboard).
 
 // Initial projects that warehouse materials get dispatched to.
 const PROJECTS = ["PAITA", "ICYP", "CALLIZO", "RIVERA"];
 
 async function main() {
-  // Idempotent: wipe and reseed so `db:reset`/`db:seed` are repeatable.
-  await prisma.product.deleteMany();
-  await prisma.product.createMany({ data: products });
+  // Fully non-destructive: every step upserts, so re-seeding never wipes live
+  // inventory, projects, dispatched materials, or users.
 
-  const low = products.filter((p) => p.quantity <= p.reorderLevel).length;
-  console.log(`Seeded ${products.length} products (${low} at or below reorder level).`);
+  // Sample products, idempotent by sku. `update: {}` means an existing product
+  // keeps its live quantity/price/etc. — the seed only fills in what's missing.
+  for (const product of products) {
+    await prisma.product.upsert({
+      where: { sku: product.sku },
+      update: {},
+      create: product,
+    });
+  }
+  console.log(`Ensured ${products.length} sample products (existing rows untouched).`);
 
-  // Five team members. Login (src/app/login/actions.ts) looks the submitted
-  // username up in this table, so any of these credentials is authorized. No
-  // signup flow — edit this list to manage the team, then reseed.
-  await prisma.user.deleteMany();
-  await prisma.user.createMany({
-    data: teamMembers.map((m) => ({
-      username: m.username,
-      passwordHash: hashPassword(m.password),
-    })),
+  // Ensure ONLY the "cucho" login, via upsert (never deleteMany) so seeding
+  // cannot wipe users managed elsewhere (e.g. the Supabase Dashboard). cucho's
+  // password comes from SEED_PW_CUCHO so it never lands in git.
+  const cuchoPassword = process.env.SEED_PW_CUCHO;
+  if (!cuchoPassword) {
+    throw new Error(
+      "Missing SEED_PW_CUCHO — set it in .env before seeding (see .env.example).",
+    );
+  }
+  await prisma.user.upsert({
+    where: { username: "cucho" },
+    update: { passwordHash: hashPassword(cuchoPassword) },
+    create: { username: "cucho", passwordHash: hashPassword(cuchoPassword) },
   });
-  console.log(`Seeded ${teamMembers.length} users (${teamMembers.map((m) => m.username).join(", ")}).`);
+  console.log("Ensured login: cucho.");
 
-  // Initial projects. Materials are dispatched to these (see the Proyectos module).
-  await prisma.projectItem.deleteMany();
-  await prisma.project.deleteMany();
-  await prisma.project.createMany({ data: PROJECTS.map((name) => ({ name })) });
-  console.log(`Seeded ${PROJECTS.length} projects (${PROJECTS.join(", ")}).`);
+  // Initial projects, idempotent by name. Never deletes existing projects or the
+  // materials already dispatched to them.
+  for (const name of PROJECTS) {
+    await prisma.project.upsert({ where: { name }, update: {}, create: { name } });
+  }
+  console.log(`Ensured ${PROJECTS.length} projects (existing rows untouched).`);
 }
 
 main()

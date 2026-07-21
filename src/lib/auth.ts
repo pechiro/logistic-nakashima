@@ -1,4 +1,7 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+// Relative, not "@/…": prisma/seed.ts imports this module outside Next, where
+// the path alias doesn't resolve.
+import { SESSION_TTL_MS } from "./session-timing";
 
 /**
  * Minimal auth primitives — password hashing and a signed session cookie —
@@ -7,7 +10,6 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
  */
 
 export const SESSION_COOKIE = "stockroom_session";
-const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days, in seconds
 
 // Demo app: a static fallback keeps it runnable out of the box. Set AUTH_SECRET
 // in the environment to make sessions non-forgeable in any real deployment.
@@ -37,24 +39,46 @@ function sign(payload: string): string {
   return createHmac("sha256", SECRET).update(payload).digest("hex");
 }
 
-/** A session token is `base64url(username).hmac` — self-contained, no store. */
+/**
+ * A session token is `base64url(username).expiresAt.hmac` — self-contained, no
+ * store. The expiry sits *inside* the signed payload, so a client can't extend
+ * its own session by editing the cookie; only the server can mint a fresh one
+ * (see `touchSession()` in app/login/actions.ts).
+ */
 export function createSessionToken(username: string): string {
-  const payload = Buffer.from(username).toString("base64url");
+  const payload = `${Buffer.from(username).toString("base64url")}.${Date.now() + SESSION_TTL_MS}`;
   return `${payload}.${sign(payload)}`;
 }
 
-/** Verify a token's signature and return the username, or null if invalid. */
-export function verifySessionToken(token: string | undefined): string | null {
+/**
+ * Verify a token's signature and expiry, returning the username — or null if
+ * the token is missing, forged, malformed, or past its expiry.
+ */
+export function verifySessionToken(
+  token: string | undefined,
+  now: number = Date.now(),
+): string | null {
   if (!token) return null;
-  const dot = token.lastIndexOf(".");
-  if (dot < 1) return null;
-  const payload = token.slice(0, dot);
-  const signature = token.slice(dot + 1);
-  const expected = sign(payload);
-  const a = Buffer.from(signature);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
-  return Buffer.from(payload, "base64url").toString("utf8");
+
+  const signatureAt = token.lastIndexOf(".");
+  if (signatureAt < 1) return null;
+  const payload = token.slice(0, signatureAt);
+
+  const actual = Buffer.from(token.slice(signatureAt + 1));
+  const expected = Buffer.from(sign(payload));
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
+
+  // `payload` is `base64url(username).expiresAt`; the base64url alphabet never
+  // contains a dot, so the first one always separates the two fields. A payload
+  // with no dot is a pre-expiry token from an older release — reject it rather
+  // than honour a session that would never time out.
+  const expiryAt = payload.indexOf(".");
+  if (expiryAt < 1) return null;
+
+  const expiresAt = Number(payload.slice(expiryAt + 1));
+  if (!Number.isFinite(expiresAt) || expiresAt <= now) return null;
+
+  return Buffer.from(payload.slice(0, expiryAt), "base64url").toString("utf8");
 }
 
 /** Options for the session cookie (shared by set + delete). */
@@ -64,6 +88,8 @@ export function sessionCookieOptions() {
     sameSite: "lax" as const,
     path: "/",
     secure: process.env.NODE_ENV === "production",
-    maxAge: SESSION_MAX_AGE,
+    // Matches the token's own lifetime, so a browser that sat closed past the
+    // idle window doesn't even send a cookie back.
+    maxAge: Math.floor(SESSION_TTL_MS / 1000),
   };
 }

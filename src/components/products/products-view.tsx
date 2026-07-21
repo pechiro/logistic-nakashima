@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { PackagePlus, PackageSearch, Plus, Search } from "lucide-react";
-import type { ProductListItem } from "@/lib/types";
+import type { ProductListItem, ProductRow } from "@/lib/types";
 import { isLowStock } from "@/lib/format";
 import { ProductTable } from "./product-table";
 import { ProductDrawer } from "./product-drawer";
@@ -13,7 +13,7 @@ export function ProductsView({
   products,
   categories,
 }: {
-  products: ProductListItem[];
+  products: ProductRow[];
   categories: string[];
 }) {
   const [query, setQuery] = useState("");
@@ -27,7 +27,9 @@ export function ProductsView({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ProductListItem | null>(null);
 
-  const [toast, setToast] = useState<{ id: number; message: string } | null>(null);
+  const [toast, setToast] = useState<
+    { id: number; message: string; variant: "success" | "error" } | null
+  >(null);
 
   const lowCount = useMemo(
     () => products.filter((p) => isLowStock(p.quantity, p.reorderLevel)).length,
@@ -39,18 +41,28 @@ export function ProductsView({
     return products.filter((p) => {
       if (category !== "all" && p.category !== category) return false;
       if (lowOnly && !isLowStock(p.quantity, p.reorderLevel)) return false;
-      if (q && !`${p.name} ${p.sku} ${p.category}`.toLowerCase().includes(q)) {
-        return false;
+      if (q) {
+        // Match warehouse fields plus the names of any active projects the item
+        // is dispatched to, so searching a project surfaces its materials too.
+        const haystack = `${p.name} ${p.sku} ${p.category} ${p.specialty ?? ""} ${
+          p.measure ?? ""
+        } ${p.deployments.map((d) => d.projectName).join(" ")}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
       }
       return true;
     });
   }, [products, query, category, lowOnly]);
 
   const showToast = useCallback(
-    (message: string) => setToast({ id: Date.now(), message }),
+    (message: string, variant: "success" | "error" = "success") =>
+      setToast({ id: Date.now(), message, variant }),
     [],
   );
   const dismissToast = useCallback(() => setToast(null), []);
+  const onImageResult = useCallback(
+    (message: string, ok: boolean) => showToast(message, ok ? "success" : "error"),
+    [showToast],
+  );
 
   const openCreate = useCallback(() => {
     setEditing(null);
@@ -148,8 +160,15 @@ export function ProductsView({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 sm:flex-none">
+          {/* Both controls are replaced elements with a wide intrinsic min-width
+              (the input's default character size; the select's longest option),
+              and a flex item won't shrink below that unless told to. Left alone,
+              this pair overflowed the viewport and dragged the whole page
+              sideways on a phone. The explicit min-width on the search box
+              overrides that `auto` minimum and lets the select wrap below it
+              once the two no longer fit side by side. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[8rem] flex-1 sm:flex-none">
               <Search
                 size={15}
                 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
@@ -158,9 +177,9 @@ export function ProductsView({
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar productos"
-                aria-label="Buscar productos"
-                className="input h-9 w-full pl-8 sm:w-56"
+                placeholder="Buscar producto, SKU o proyecto"
+                aria-label="Buscar por producto, SKU o proyecto"
+                className="input h-9 w-full pl-8 sm:w-64"
               />
             </div>
             <label htmlFor="category-filter" className="sr-only">
@@ -170,7 +189,7 @@ export function ProductsView({
               id="category-filter"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="input h-9 w-auto"
+              className="input h-9 w-auto min-w-0 max-w-full"
             >
               <option value="all">Todas las categorías</option>
               {categories.map((c) => (
@@ -218,6 +237,7 @@ export function ProductsView({
             products={filtered}
             onEdit={openEdit}
             onDelete={askDelete}
+            onImageResult={onImageResult}
           />
         )}
       </div>
@@ -237,7 +257,12 @@ export function ProductsView({
         onDeleted={onDeleted}
       />
       {toast && (
-        <Toast key={toast.id} message={toast.message} onDismiss={dismissToast} />
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={dismissToast}
+        />
       )}
     </>
   );

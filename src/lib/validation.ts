@@ -21,6 +21,30 @@ export const productInputSchema = z.object({
     .trim()
     .min(1, "La categoría es obligatoria.")
     .max(60, "La categoría debe tener menos de 60 caracteres."),
+  // Optional secondary classification. Empty collapses to null; stored uppercase
+  // so tags read consistently (SOPORTE / ACI / DACI).
+  specialty: z.preprocess(
+    (value) =>
+      typeof value === "string" && value.trim().length > 0
+        ? value.trim().toUpperCase()
+        : null,
+    z.string().max(40, "La especialidad debe tener menos de 40 caracteres.").nullable(),
+  ),
+  // Optional free-text measure (e.g. 2", 1/2"). Empty collapses to null.
+  measure: z.preprocess(
+    (value) => (typeof value === "string" && value.trim().length > 0 ? value.trim() : null),
+    z.string().max(40, "La medida debe tener menos de 40 caracteres.").nullable(),
+  ),
+  // Optional reference-image URL. Empty collapses to null; when present it must
+  // look like an http(s) URL so the "Ver imagen" link always opens something.
+  imageUrl: z.preprocess(
+    (value) => (typeof value === "string" && value.trim().length > 0 ? value.trim() : null),
+    z
+      .string()
+      .max(2000, "La URL es demasiado larga.")
+      .regex(/^https?:\/\/\S+$/i, "Ingresa una URL válida (http:// o https://).")
+      .nullable(),
+  ),
   // Optional notes. Empty/whitespace collapses to null so blank stays unset.
   description: z.preprocess(
     (value) => (typeof value === "string" && value.trim().length > 0 ? value.trim() : null),
@@ -46,7 +70,16 @@ export type ProductInput = z.infer<typeof productInputSchema>;
 
 export type FieldErrors = Partial<
   Record<
-    "name" | "sku" | "category" | "description" | "quantity" | "unitPrice" | "reorderLevel",
+    | "name"
+    | "sku"
+    | "category"
+    | "specialty"
+    | "measure"
+    | "imageUrl"
+    | "description"
+    | "quantity"
+    | "unitPrice"
+    | "reorderLevel",
     string
   >
 >;

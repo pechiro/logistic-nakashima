@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import {
-  ArrowDownUp,
   FolderKanban,
   History,
   LayoutDashboard,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { logout } from "@/app/login/actions";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { IdleTimeout } from "@/components/auth/idle-timeout";
 
 type IconType = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
 
@@ -24,7 +24,6 @@ type NavItem = { label: string; href?: string; icon: IconType; soon?: boolean };
 const PRIMARY_NAV: NavItem[] = [
   { label: "Panel de Control", href: "/", icon: LayoutDashboard },
   { label: "Productos", href: "/products", icon: Package },
-  { label: "Inventario", href: "/stock", icon: ArrowDownUp },
   { label: "Movimientos", href: "/movements", icon: History },
   { label: "Proyectos", href: "/proyectos", icon: FolderKanban },
 ];
@@ -46,7 +45,7 @@ function Wordmark() {
         className="h-8 w-8 shrink-0 rounded-md object-contain"
       />
       <span className="font-display text-[15px] font-semibold leading-tight tracking-tight text-ink">
-        Logística Grupo Nakashima
+        NKS Ops
       </span>
     </div>
   );
@@ -211,6 +210,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen">
       {/* Keep every authed page in sync with the shared cloud DB. */}
       <AutoRefresh />
+      {/* Sign out after an hour with no interaction. */}
+      <IdleTimeout />
 
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line bg-surface lg:flex">

@@ -3,9 +3,9 @@ import { LoginForm } from "@/components/auth/login-form";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; expired?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, expired } = await searchParams;
   const dest = typeof next === "string" && next.startsWith("/") ? next : "/";
 
   return (
@@ -15,22 +15,33 @@ export default async function LoginPage({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo-nakashima.png"
-            alt="Logística Grupo Nakashima"
+            alt="NKS Ops"
             width={120}
             height={120}
             className="h-auto w-[120px] max-w-[150px] rounded-lg object-contain"
           />
           <h1 className="mt-4 font-display text-2xl font-semibold tracking-tight text-ink">
-            Iniciar sesión en Logística Grupo Nakashima
+            Iniciar sesión en NKS Ops
           </h1>
           <p className="mt-1 text-sm text-ink-muted">
             Ingresa tus credenciales para acceder al inventario.
           </p>
         </div>
 
+        {expired ? (
+          <p
+            role="status"
+            className="mb-4 rounded-md border border-low-bar/30 bg-low-weak px-3 py-2 text-sm text-low"
+          >
+            Tu sesión se cerró por inactividad. Vuelve a iniciar sesión.
+          </p>
+        ) : null}
+
         <div className="card p-6">
           <LoginForm next={dest} />
         </div>
+
+        <p className="mt-6 text-center text-xs text-ink-faint">NKS Ops</p>
       </div>
     </main>
   );

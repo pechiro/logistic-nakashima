@@ -77,7 +77,9 @@ export function Overlay({
       const target =
         panel.querySelector<HTMLElement>("[data-autofocus]") ??
         panel.querySelector<HTMLElement>(FOCUSABLE);
-      target?.focus();
+      // preventScroll so focusing a field deep in the drawer never yanks the
+      // page's scroll position.
+      target?.focus({ preventScroll: true });
     }, 30);
 
     function onKey(e: KeyboardEvent) {
@@ -113,7 +115,9 @@ export function Overlay({
       clearTimeout(focusTimer);
       document.removeEventListener("keydown", onKey, true);
       document.body.style.overflow = previousOverflow;
-      restoreRef.current?.focus?.();
+      // preventScroll: restoring focus to the trigger (e.g. a row's edit button)
+      // must not scroll it into view and move the page after the drawer closes.
+      restoreRef.current?.focus?.({ preventScroll: true });
     };
   }, [render]);
 

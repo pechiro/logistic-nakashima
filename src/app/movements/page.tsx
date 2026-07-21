@@ -38,7 +38,9 @@ export default async function MovementsPage() {
         ) : (
           <>
             <div className="card overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* `relative` so any absolutely-positioned descendant is clipped
+                  by this scroller rather than widening the page. */}
+              <div className="relative overflow-x-auto">
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-line">
