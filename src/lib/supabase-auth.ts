@@ -5,7 +5,7 @@
 // used only to *verify* credentials, so accounts created in the Supabase
 // Dashboard can sign in. On success the login action mints the normal app cookie.
 
-const HOUSE_EMAIL_DOMAIN = "@nakashima.pe";
+const HOUSE_EMAIL_DOMAIN = "@gruponk.com.pe";
 
 /** Whether Supabase Auth env vars are present (project URL + anon key). */
 export function isSupabaseAuthConfigured(): boolean {
@@ -14,7 +14,7 @@ export function isSupabaseAuthConfigured(): boolean {
 
 /**
  * Turn a login identifier into the email GoTrue expects: a bare username gets
- * the house domain appended ("cucho" -> "cucho@nakashima.pe"); anything that
+ * the house domain appended ("cucho" -> "cucho@gruponk.com.pe"); anything that
  * already contains "@" is used as-is.
  */
 export function usernameToEmail(identifier: string): string {

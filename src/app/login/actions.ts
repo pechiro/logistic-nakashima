@@ -29,9 +29,9 @@ function safeNext(next: string | null): string {
 }
 
 // Team members log in with a bare username (no email — see src/lib/auth.ts).
-// The house internal-email domain; a value typed as "cucho@nakashima.pe" is
+// The house internal-email domain; a value typed as "cucho@gruponk.com.pe" is
 // folded back to the stored username "cucho" so either form logs in seamlessly.
-const HOUSE_EMAIL_DOMAIN = "@nakashima.pe";
+const HOUSE_EMAIL_DOMAIN = "@gruponk.com.pe";
 
 /** Normalize a submitted login identifier to the stored username form. */
 function normalizeUsername(raw: string): string {
@@ -59,7 +59,7 @@ export async function login(
   let authed = false;
 
   // 1) Supabase Auth first (when configured) so any account created in the
-  //    Supabase Dashboard can sign in. A bare username becomes <name>@nakashima.pe.
+  //    Supabase Dashboard can sign in. A bare username becomes <name>@gruponk.com.pe.
   if (isSupabaseAuthConfigured()) {
     const result = await verifyWithSupabase(usernameToEmail(raw), password);
     if (result.ok) {
